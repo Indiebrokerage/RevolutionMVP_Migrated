@@ -12,20 +12,20 @@ npm run build
 cd ..
 echo "✅ React build completed"
 
-# Step 2: Install Python dependencies
+# Step 2: Install Python dependencies from root
 echo "📦 Installing Python dependencies..."
-cd backend/
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 echo "✅ Python dependencies installed"
 
 # Step 3: Collect static files (includes React build)
 echo "📁 Collecting static files..."
-python manage.py collectstatic --noinput
+cd backend/
+python3 manage.py collectstatic --noinput
 echo "✅ Static files collected"
 
 # Step 4: Run database migrations
 echo "🗄️ Running database migrations..."
-python manage.py migrate --noinput
+python3 manage.py migrate --noinput
 echo "✅ Database migrations completed"
 
 # Step 5: Start Django server
