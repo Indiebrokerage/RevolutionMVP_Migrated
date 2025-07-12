@@ -46,47 +46,23 @@ fi
 
 # Step 4: Install Python dependencies
 echo "📦 Installing Python dependencies..."
-if command -v pip3 &> /dev/null; then
-    pip3 install -r requirements.txt
-elif command -v pip &> /dev/null; then
-    pip install -r requirements.txt
-else
-    echo "❌ No pip found"
-    exit 1
-fi
+# Use python3 and pip3 explicitly for Railway environment
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
 echo "✅ Python dependencies installed"
 
 # Step 5: Collect static files
 echo "📁 Collecting static files..."
 cd backend/
-if command -v python3 &> /dev/null; then
-    python3 manage.py collectstatic --noinput
-elif command -v python &> /dev/null; then
-    python manage.py collectstatic --noinput
-else
-    echo "❌ No python found"
-    exit 1
-fi
+python3 manage.py collectstatic --noinput
 echo "✅ Static files collected"
 
 # Step 6: Run database migrations
 echo "🗄️ Running database migrations..."
-if command -v python3 &> /dev/null; then
-    python3 manage.py migrate --noinput
-elif command -v python &> /dev/null; then
-    python manage.py migrate --noinput
-else
-    echo "❌ No python found"
-    exit 1
-fi
+python3 manage.py migrate --noinput
 echo "✅ Database migrations completed"
 
 # Step 7: Start Django server
 echo "🌟 Starting Django server (serving React frontend + API)..."
-if command -v gunicorn &> /dev/null; then
-    exec gunicorn RevolutionMVP_Django.wsgi --log-file - --bind 0.0.0.0:$PORT
-else
-    echo "❌ Gunicorn not found"
-    exit 1
-fi
+exec gunicorn RevolutionMVP_Django.wsgi --log-file - --bind 0.0.0.0:$PORT
 
