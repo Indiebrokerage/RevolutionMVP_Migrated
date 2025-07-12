@@ -5,20 +5,8 @@
   },
   "deploy": {
     "startCommand": "./deploy-unified.sh",
-    "buildCommand": "chmod +x deploy-unified.sh",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
-  },
-  "environments": {
-    "production": {
-      "variables": {
-        "NODE_ENV": "production",
-        "DJANGO_SETTINGS_MODULE": "RevolutionMVP_Django.settings",
-        "DEBUG": "False",
-        "NIXPACKS_PYTHON_VERSION": "3.11",
-        "NIXPACKS_NODE_VERSION": "18"
-      }
-    }
   }
 }
 
