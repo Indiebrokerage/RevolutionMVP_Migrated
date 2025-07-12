@@ -1,0 +1,22 @@
+[providers]
+python = "3.11"
+nodejs = "18"
+
+[phases.setup]
+nixPkgs = ["python311", "nodejs_18", "python311Packages.pip"]
+
+[phases.install]
+cmds = [
+  "pip install -r requirements.txt",
+  "cd frontend && npm install --legacy-peer-deps"
+]
+
+[phases.build]
+cmds = [
+  "cd frontend && npm run build",
+  "cd backend && python manage.py collectstatic --noinput"
+]
+
+[start]
+cmd = "./deploy-unified.sh"
+

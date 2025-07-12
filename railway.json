@@ -14,7 +14,9 @@
       "variables": {
         "NODE_ENV": "production",
         "DJANGO_SETTINGS_MODULE": "RevolutionMVP_Django.settings",
-        "DEBUG": "False"
+        "DEBUG": "False",
+        "NIXPACKS_PYTHON_VERSION": "3.11",
+        "NIXPACKS_NODE_VERSION": "18"
       }
     }
   }
