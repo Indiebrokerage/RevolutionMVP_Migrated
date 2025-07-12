@@ -47,32 +47,20 @@ fi
 # Step 4: Install Python dependencies
 echo "📦 Installing Python dependencies..."
 # Use python3 and pip3 explicitly for Railway environment
-if command -v python3 &> /dev/null; then
-    python3 -m pip install --upgrade pip
-    python3 -m pip install -r requirements.txt
-    echo "✅ Python dependencies installed"
-else
-    echo "⚠️ Python3 not available during build, dependencies should be installed by Railway"
-fi
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
+echo "✅ Python dependencies installed"
 
 # Step 5: Collect static files
 echo "📁 Collecting static files..."
 cd backend/
-if command -v python3 &> /dev/null; then
-    python3 manage.py collectstatic --noinput
-    echo "✅ Static files collected"
-else
-    echo "⚠️ Python3 not available, skipping static collection"
-fi
+python3 manage.py collectstatic --noinput
+echo "✅ Static files collected"
 
 # Step 6: Run database migrations
 echo "🗄️ Running database migrations..."
-if command -v python3 &> /dev/null; then
-    python3 manage.py migrate --noinput
-    echo "✅ Database migrations completed"
-else
-    echo "⚠️ Python3 not available, skipping migrations"
-fi
+python3 manage.py migrate --noinput
+echo "✅ Database migrations completed"
 
 echo "🎉 Build process completed successfully!"
 
