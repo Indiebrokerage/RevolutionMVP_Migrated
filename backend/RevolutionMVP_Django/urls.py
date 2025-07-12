@@ -12,16 +12,17 @@ def react_frontend_view(request):
     try:
         # Try to serve the React index.html
         return render(request, 'index.html')
-    except:
+    except Exception as e:
         # Fallback if React build is not available
-        return HttpResponse("""
+        return HttpResponse(f"""
         <html>
         <head><title>RevolutionMVP</title></head>
         <body>
             <h1>RevolutionMVP Application</h1>
-            <p>The application is running, but the React frontend is not yet available.</p>
+            <p>The application is running, but the React frontend is being prepared...</p>
             <p>API endpoints are available at <a href="/api/">/api/</a></p>
             <p>Admin interface is available at <a href="/admin/">/admin/</a></p>
+            <p><small>Debug: {str(e)}</small></p>
         </body>
         </html>
         """)

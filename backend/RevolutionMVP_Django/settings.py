@@ -141,13 +141,24 @@ REACT_BUILD_DIR = BASE_DIR.parent / 'frontend' / 'dist'
 
 # Additional static files directories
 STATICFILES_DIRS = []
+
+# Add React build assets if they exist
 if REACT_BUILD_DIR.exists():
     assets_dir = REACT_BUILD_DIR / 'assets'
     if assets_dir.exists():
         STATICFILES_DIRS.append(assets_dir)
 
+# Also check for assets copied to staticfiles during deployment
+copied_assets_dir = BASE_DIR / 'staticfiles'
+if copied_assets_dir.exists() and copied_assets_dir not in STATICFILES_DIRS:
+    # This handles assets copied by the deployment script
+    pass  # STATIC_ROOT already points here
+
 # WhiteNoise configuration for serving static files
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Ensure WhiteNoise can serve index files
+WHITENOISE_INDEX_FILE = True
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
