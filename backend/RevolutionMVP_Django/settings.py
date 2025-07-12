@@ -68,6 +68,7 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -88,17 +89,11 @@ if DATABASE_URL:
         'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
 else:
+    # Use SQLite as fallback for development/testing
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'homestead',
-            'USER': 'homestead',
-            'PASSWORD': 'secret',
-            'HOST': '127.0.0.1',
-            'PORT': '3306',
-            'OPTIONS': {
-                'init_command': "SET default_storage_engine=InnoDB",
-            }
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
 
@@ -145,13 +140,40 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 REACT_BUILD_DIR = BASE_DIR.parent / 'frontend' / 'dist'
 
 # Additional static files directories
-STATICFILES_DIRS = [
-    REACT_BUILD_DIR / 'assets',  # React build assets
-] if REACT_BUILD_DIR.exists() else []
+STATICFILES_DIRS = []
+if REACT_BUILD_DIR.exists():
+    assets_dir = REACT_BUILD_DIR / 'assets'
+    if assets_dir.exists():
+        STATICFILES_DIRS.append(assets_dir)
+
+# WhiteNoise configuration for serving static files
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Logging configuration for debugging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
 
 
