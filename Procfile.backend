@@ -1,0 +1,2 @@
+web: ./deploy-backend.sh
+

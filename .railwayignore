@@ -1,0 +1,15 @@
+# Railway ignore file
+# This file helps Railway understand what to ignore during deployment
+
+# For backend deployment, ignore frontend files
+frontend/
+*.md
+.git/
+.gitignore
+
+# For frontend deployment, ignore backend files  
+backend/
+*.md
+.git/
+.gitignore
+

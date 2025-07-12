@@ -1,0 +1,7 @@
+# Root-level requirements.txt for Railway Python detection
+# This file helps Railway understand this is a Python project for backend deployment
+# The actual backend requirements are in backend/requirements.txt
+
+# Install backend requirements
+-r backend/requirements.txt
+

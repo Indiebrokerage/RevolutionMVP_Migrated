@@ -1,0 +1,33 @@
+{
+  "monorepo": true,
+  "services": {
+    "backend": {
+      "name": "revolution-mvp-backend",
+      "type": "python",
+      "framework": "django",
+      "rootDirectory": "backend",
+      "buildCommand": "pip install -r requirements.txt",
+      "startCommand": "gunicorn RevolutionMVP_Django.wsgi --log-file - --bind 0.0.0.0:$PORT",
+      "environmentVariables": {
+        "DJANGO_SETTINGS_MODULE": "RevolutionMVP_Django.settings",
+        "DEBUG": "False"
+      }
+    },
+    "frontend": {
+      "name": "revolution-mvp-frontend", 
+      "type": "nodejs",
+      "framework": "react",
+      "rootDirectory": "frontend",
+      "buildCommand": "npm install && npm run build",
+      "startCommand": "npm run preview -- --host 0.0.0.0 --port $PORT",
+      "environmentVariables": {
+        "NODE_ENV": "production"
+      }
+    }
+  },
+  "deployment": {
+    "strategy": "separate-services",
+    "description": "Deploy backend and frontend as separate Railway services from the same repository"
+  }
+}
+
