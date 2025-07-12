@@ -1,6 +1,8 @@
-[providers]
-python = "3.11"
-nodejs = "18"
+providers = ["python", "nodejs"]
+
+[variables]
+PYTHON_VERSION = "3.11"
+NODE_VERSION = "18"
 
 [phases.setup]
 nixPkgs = ["python311", "nodejs_18", "python311Packages.pip"]
