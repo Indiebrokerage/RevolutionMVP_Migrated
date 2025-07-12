@@ -3,8 +3,8 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "pnpm preview --host 0.0.0.0 --port $PORT",
-    "buildCommand": "pnpm install && pnpm run build"
+    "startCommand": "npm run preview -- --host 0.0.0.0 --port $PORT",
+    "buildCommand": "npm install && npm run build"
   }
 }
 
