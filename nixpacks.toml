@@ -1,0 +1,29 @@
+providers = ["python", "node"]
+
+[variables]
+PYTHON_VERSION = "3.11"
+NODE_VERSION = "18"
+
+[phases.setup]
+nixPkgs = ["python311", "nodejs_18", "npm"]
+
+[phases.install]
+cmds = [
+    "pip install -r requirements.txt",
+    "cd frontend && npm install --legacy-peer-deps"
+]
+
+[phases.build]
+cmds = [
+    "cd frontend && npm run build",
+    "mkdir -p backend/core/templates",
+    "cp frontend/dist/index.html backend/core/templates/ || echo 'No index.html found'",
+    "mkdir -p backend/staticfiles",
+    "cp -r frontend/dist/assets/* backend/staticfiles/ || echo 'No assets found'",
+    "cd backend && python manage.py collectstatic --noinput",
+    "cd backend && python manage.py migrate --noinput"
+]
+
+[start]
+cmd = "cd backend && gunicorn RevolutionMVP_Django.wsgi --bind 0.0.0.0:$PORT"
+
