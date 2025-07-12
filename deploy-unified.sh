@@ -7,7 +7,7 @@ echo "🚀 Starting Unified Deployment (React + Django)..."
 # Step 1: Build React Frontend
 echo "📦 Building React Frontend..."
 cd frontend/
-npm install
+npm install --legacy-peer-deps
 npm run build
 echo "✅ React build completed"
 
