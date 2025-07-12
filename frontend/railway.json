@@ -1,0 +1,10 @@
+{
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "deploy": {
+    "startCommand": "pnpm preview --host 0.0.0.0 --port $PORT",
+    "buildCommand": "pnpm install && pnpm run build"
+  }
+}
+
