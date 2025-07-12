@@ -47,6 +47,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Add whitenoise for static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -60,7 +61,10 @@ ROOT_URLCONF = 'RevolutionMVP_Django.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'core' / 'templates'], # Add template directory
+        'DIRS': [
+            BASE_DIR / 'core' / 'templates',  # Django templates
+            BASE_DIR.parent / 'frontend' / 'dist',  # React build directory
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -135,6 +139,15 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# React Frontend Integration
+# Path to the React build directory
+REACT_BUILD_DIR = BASE_DIR.parent / 'frontend' / 'dist'
+
+# Additional static files directories
+STATICFILES_DIRS = [
+    REACT_BUILD_DIR / 'assets',  # React build assets
+] if REACT_BUILD_DIR.exists() else []
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

@@ -4,6 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
+    "startCommand": "./deploy-unified.sh",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   },
@@ -11,7 +12,8 @@
     "production": {
       "variables": {
         "NODE_ENV": "production",
-        "DJANGO_SETTINGS_MODULE": "RevolutionMVP_Django.settings"
+        "DJANGO_SETTINGS_MODULE": "RevolutionMVP_Django.settings",
+        "DEBUG": "False"
       }
     }
   }

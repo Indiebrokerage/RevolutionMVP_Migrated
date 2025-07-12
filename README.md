@@ -1,6 +1,6 @@
-# RevolutionMVP - Migrated to Django/React
+# RevolutionMVP - Unified Django/React Deployment
 
-This repository contains the migrated RevolutionMVP application, converted from Laravel/PHP to a modern Django/React stack.
+This repository contains the migrated RevolutionMVP application, converted from Laravel/PHP to a modern Django/React stack with **unified deployment** - both frontend and backend served from a single Railway service.
 
 ## Repository Structure
 
@@ -9,16 +9,15 @@ RevolutionMVP_Migrated/
 ├── backend/          # Django REST API backend
 │   ├── core/         # Django app with models, views, URLs
 │   ├── RevolutionMVP_Django/  # Django project settings
-│   ├── requirements.txt       # Python dependencies
-│   ├── railway.json          # Railway deployment config
-│   └── Procfile              # Process file for deployment
+│   └── requirements.txt       # Python dependencies
 ├── frontend/         # React frontend application
 │   ├── src/          # React source code
 │   ├── public/       # Static assets
-│   ├── package.json  # Node.js dependencies
-│   ├── railway.json  # Railway deployment config
-│   └── Procfile      # Process file for deployment
-└── railway.json      # Root Railway configuration
+│   └── package.json  # Node.js dependencies
+├── deploy-unified.sh # Unified deployment script
+├── Procfile          # Railway process file
+├── railway.json      # Railway configuration
+└── README.md         # This file
 ```
 
 ## Technology Stack
@@ -28,7 +27,7 @@ RevolutionMVP_Migrated/
 - **Database**: MySQL/PostgreSQL
 - **API**: Django REST Framework
 - **Authentication**: Django built-in auth system
-- **Deployment**: Gunicorn WSGI server
+- **Static Files**: WhiteNoise for serving React build
 
 ### Frontend (React)
 - **Framework**: React 18
@@ -38,75 +37,95 @@ RevolutionMVP_Migrated/
 - **Routing**: React Router
 - **State Management**: React Hooks
 
+## Unified Deployment Architecture
+
+This application uses a **single-service deployment** where:
+1. **React frontend** is built into static files
+2. **Django backend** serves both the API (under `/api/`) and the React frontend
+3. **All routes** not starting with `/api/` or `/admin/` serve the React application
+4. **Single Railway service** handles everything
+
 ## Railway Deployment Instructions
 
-This is a **monorepo** containing both backend and frontend applications. You need to deploy them as **separate services** on Railway.
+### Simple One-Click Deployment
 
-### Step 1: Create Backend Service
-1. Go to your Railway project dashboard
-2. Click "New Service" → "GitHub Repo"
-3. Select this repository (`RevolutionMVP_Migrated`)
-4. **Important**: Set the **Root Directory** to `backend/`
-5. Railway will automatically detect the Django application and use the `railway.json` configuration
+1. **Go to Railway** (https://railway.app)
+2. **Click "New Project"**
+3. **Select "Deploy from GitHub repo"**
+4. **Choose this repository**: `RevolutionMVP_Migrated`
+5. **Railway will automatically**:
+   - Detect the `Procfile` and `railway.json`
+   - Run the unified deployment script
+   - Build React frontend and Django backend
+   - Start the application
 
-### Step 2: Create Frontend Service
-1. In the same Railway project, click "New Service" → "GitHub Repo"
-2. Select this repository (`RevolutionMVP_Migrated`) again
-3. **Important**: Set the **Root Directory** to `frontend/`
-4. Railway will automatically detect the React application and use the `railway.json` configuration
+### Environment Variables (Optional)
 
-### Step 3: Configure Environment Variables
+Set these in your Railway project dashboard if needed:
+- `SECRET_KEY`: Django secret key (auto-generated if not set)
+- `DEBUG`: Set to `False` for production (default)
+- `DATABASE_URL`: Automatically provided by Railway database service
 
-#### Backend Environment Variables
-Set these in your Django backend service:
-- `DATABASE_URL`: Your database connection string
-- `DEBUG`: Set to `False` for production
-- `SECRET_KEY`: Django secret key
-- `ALLOWED_HOSTS`: Your Railway domain
+### Database Setup
 
-#### Frontend Environment Variables
-Set these in your React frontend service:
-- `VITE_API_URL`: URL of your deployed Django backend service
-
-### Step 4: Database Setup
-1. Add a database service to your Railway project (PostgreSQL recommended)
-2. The `DATABASE_URL` will be automatically provided to your backend service
-3. Run migrations: `python manage.py migrate`
+1. **Add a database** to your Railway project (PostgreSQL recommended)
+2. **Railway automatically** provides `DATABASE_URL` to your service
+3. **Migrations run automatically** during deployment
 
 ## Local Development
 
-### Backend Setup
+### Quick Start
 ```bash
+# Backend
 cd backend/
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
-```
 
-### Frontend Setup
-```bash
+# Frontend (in another terminal)
 cd frontend/
 npm install
 npm run dev
 ```
 
+### Test Unified Deployment Locally
+```bash
+# Run the same script Railway uses
+./deploy-unified.sh
+```
+
+## How It Works
+
+1. **Build Process**: The `deploy-unified.sh` script:
+   - Installs Node.js dependencies and builds React
+   - Installs Python dependencies
+   - Collects static files (includes React build)
+   - Runs database migrations
+   - Starts Django with Gunicorn
+
+2. **Request Routing**:
+   - `/api/*` → Django API endpoints
+   - `/admin/*` → Django admin interface
+   - `/*` → React frontend (single-page application)
+
+3. **Static Files**: WhiteNoise serves React build files through Django
+
 ## Features
 
-- **Property Management**: Create, read, update, delete property listings
-- **User Authentication**: Secure user registration and login
-- **Responsive Design**: Mobile-first, responsive UI
-- **Modern Architecture**: Clean separation of concerns
-- **API-First**: RESTful API design
-- **Production Ready**: Configured for cloud deployment
+- **Single Service**: Simplified deployment and management
+- **Cost Effective**: One Railway service instead of two
+- **No CORS Issues**: Frontend and backend on same domain
+- **Production Ready**: Optimized for cloud deployment
+- **Auto-Scaling**: Railway handles scaling automatically
 
 ## Migration Notes
 
-This application was successfully migrated from:
+Successfully migrated from:
 - **Laravel 5.x/PHP** → **Django 5.2.4/Python 3.11**
 - **Blade Templates** → **React 18 with Tailwind CSS**
-- **MySQL** → **PostgreSQL/MySQL (compatible with both)**
+- **Separate Services** → **Unified Single-Service Deployment**
 
-All original functionality has been preserved and enhanced with modern development practices.
+All original functionality preserved with modern development practices and simplified deployment.
 
