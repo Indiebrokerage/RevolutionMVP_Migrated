@@ -1,6 +1,3 @@
-import pymysql
-pymysql.install_as_MySQLdb()
-
 """
 Django settings for RevolutionMVP_Django project.
 
@@ -16,6 +13,14 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 import dj_database_url
+
+# Optional pymysql setup - only if available
+try:
+    import pymysql
+    pymysql.install_as_MySQLdb()
+except ImportError:
+    # pymysql not available, will use SQLite instead
+    pass
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -135,27 +140,18 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# React Frontend Integration
-# Path to the React build directory
-REACT_BUILD_DIR = BASE_DIR.parent / 'frontend' / 'dist'
-
-# Additional static files directories
-STATICFILES_DIRS = []
-
-# Add React build assets if they exist
-if REACT_BUILD_DIR.exists():
-    assets_dir = REACT_BUILD_DIR / 'assets'
-    if assets_dir.exists():
-        STATICFILES_DIRS.append(assets_dir)
-
-# Also check for assets copied to staticfiles during deployment
-copied_assets_dir = BASE_DIR / 'staticfiles'
-if copied_assets_dir.exists() and copied_assets_dir not in STATICFILES_DIRS:
-    # This handles assets copied by the deployment script
-    pass  # STATIC_ROOT already points here
+# Additional static files directories for React assets
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',  # Local static directory where React assets are copied
+]
 
 # WhiteNoise configuration for serving static files
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Ensure WhiteNoise can serve index files
 WHITENOISE_INDEX_FILE = True
