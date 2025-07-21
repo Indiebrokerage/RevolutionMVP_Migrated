@@ -3,6 +3,36 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import MailActivityLog, MailSignature, RouteMatrix, ContactsSearches, DatAwards, DatProjects, DatProjectsImages, DatProjectsVideos, UserBookmarkProject, VendorRating, CommentReview, DatLikeReviews, Activation, Persistence, Reminder, Role, RoleUser, Throttle, User
 
+# React Frontend View
+def react_frontend(request):
+    """Serve the React frontend for all non-API routes"""
+    return render(request, 'index.html')
+
+# API Welcome View
+def api_welcome(request):
+    """API welcome page showing available endpoints"""
+    return JsonResponse({
+        "message": "Revolution Realty API",
+        "version": "1.0",
+        "endpoints": {
+            "sell-my-home": "/api/sell-my-home/",
+            "property-search": "/api/property-search/",
+            "agent-list": "/api/agent-list/",
+            "contact-us": "/api/contact-us/",
+            "property-detail": "/api/property-detail/{id}/",
+            "vendor-list": "/api/vendor-list/",
+            "blog-list": "/api/blog-list/",
+            "news-list": "/api/news-list/"
+        },
+        "technology": {
+            "backend": "Django 5.2.4",
+            "frontend": "React",
+            "database": "SQLite (development)",
+            "python": "3.11"
+        },
+        "migration_status": "Laravel to Django conversion completed"
+    })
+
 # Placeholder for helper functions and custom logic from Laravel
 # These will need to be implemented or replaced with Django equivalents
 class Helper:
