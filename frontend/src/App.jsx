@@ -105,6 +105,7 @@ function App() {
               <a href="#" className="text-foreground hover:text-primary transition-colors">Vendors</a>
               <a href="#" className="text-foreground hover:text-primary transition-colors">Blog</a>
               <a href="#" className="text-foreground hover:text-primary transition-colors">Contact</a>
+              <a href="/admin/" className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors">Sign In</a>
             </nav>
           </div>
         </div>
