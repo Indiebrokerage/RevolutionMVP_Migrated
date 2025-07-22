@@ -37,8 +37,16 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
 
+# CSRF Settings for Railway deployment
+CSRF_TRUSTED_ORIGINS = [
+    'https://revolutionmvpmigrated-production.up.railway.app',
+    'https://*.railway.app',
+    'https://*.up.railway.app',
+]
 
-# Application definition
+# Additional security settings for production
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = False  # Railway handles SSL termination
 
 INSTALLED_APPS = [
     'django.contrib.admin',
