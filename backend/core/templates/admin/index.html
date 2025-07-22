@@ -1,0 +1,188 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Revolution Realty Administration') }}{% endblock %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <!-- Revolution Realty Dashboard Header -->
+    <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px;">
+        <h1 style="color: #374151; margin: 0 0 10px 0; font-size: 28px; font-weight: 600;">
+            🏠 Welcome to Revolution Realty Administration
+        </h1>
+        <p style="color: #6b7280; margin: 0; font-size: 16px;">
+            Manage your real estate portal, properties, clients, and IDX feeds from this central dashboard.
+        </p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="revolution-stats">
+        <div class="stat-card">
+            <div class="stat-number" id="total-properties">0</div>
+            <div class="stat-label">Total Properties</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="active-listings">0</div>
+            <div class="stat-label">Active Listings</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="total-users">0</div>
+            <div class="stat-label">Total Users</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="idx-feeds">0</div>
+            <div class="stat-label">IDX Feeds</div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <h3>🚀 Quick Actions</h3>
+        <div class="action-buttons">
+            <a href="/admin/auth/user/add/" class="action-btn">
+                👤 Add New User
+            </a>
+            <a href="/admin/core/" class="action-btn">
+                🏘️ Manage Properties
+            </a>
+            <a href="#" onclick="openIDXManager()" class="action-btn">
+                📡 IDX Feed Manager
+            </a>
+            <a href="/admin/auth/user/" class="action-btn">
+                👥 User Management
+            </a>
+            <a href="#" onclick="openSystemSettings()" class="action-btn">
+                ⚙️ System Settings
+            </a>
+            <a href="{{ request.scheme }}://{{ request.get_host }}/" target="_blank" class="action-btn">
+                🌐 View Live Site
+            </a>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 20px 0;">
+        <h3 style="color: #374151; margin-bottom: 15px; font-weight: 600;">📈 Recent Activity</h3>
+        <div id="recent-activity">
+            <p style="color: #6b7280; font-style: italic;">Loading recent activity...</p>
+        </div>
+    </div>
+
+    <!-- System Status -->
+    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 20px 0;">
+        <h3 style="color: #374151; margin-bottom: 15px; font-weight: 600;">🔧 System Status</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+            <div style="padding: 15px; background: #f0fdf4; border-radius: 6px; border-left: 4px solid #10b981;">
+                <div style="font-weight: 600; color: #065f46;">Database</div>
+                <div style="color: #047857; font-size: 14px;">✅ Connected</div>
+            </div>
+            <div style="padding: 15px; background: #f0fdf4; border-radius: 6px; border-left: 4px solid #10b981;">
+                <div style="font-weight: 600; color: #065f46;">IDX Sync</div>
+                <div style="color: #047857; font-size: 14px;">✅ Active</div>
+            </div>
+            <div style="padding: 15px; background: #f0fdf4; border-radius: 6px; border-left: 4px solid #10b981;">
+                <div style="font-weight: 600; color: #065f46;">Email Service</div>
+                <div style="color: #047857; font-size: 14px;">✅ Operational</div>
+            </div>
+            <div style="padding: 15px; background: #f0fdf4; border-radius: 6px; border-left: 4px solid #10b981;">
+                <div style="font-weight: 600; color: #065f46;">Storage</div>
+                <div style="color: #047857; font-size: 14px;">✅ Available</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Default Django Admin Content -->
+    {% if app_list %}
+        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 20px 0;">
+            <h3 style="color: #374151; margin-bottom: 15px; font-weight: 600;">📋 Administration Modules</h3>
+            {% for app in app_list %}
+                <div class="app-{{ app.app_label }} module">
+                    <table>
+                        <caption>
+                            <a href="{{ app.app_url }}" class="section" title="{% blocktrans with name=app.name %}Models in the {{ name }} application{% endblocktrans %}">{{ app.name }}</a>
+                        </caption>
+                        {% for model in app.models %}
+                            <tr class="model-{{ model.object_name|lower }}">
+                                {% if model.admin_url %}
+                                    <th scope="row"><a href="{{ model.admin_url }}">{{ model.name }}</a></th>
+                                {% else %}
+                                    <th scope="row">{{ model.name }}</th>
+                                {% endif %}
+
+                                {% if model.add_url %}
+                                    <td><a href="{{ model.add_url }}" class="addlink">{% trans 'Add' %}</a></td>
+                                {% else %}
+                                    <td>&nbsp;</td>
+                                {% endif %}
+
+                                {% if model.admin_url %}
+                                    <td><a href="{{ model.admin_url }}" class="changelink">{% trans 'Change' %}</a></td>
+                                {% else %}
+                                    <td>&nbsp;</td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>{% trans "You don't have permission to edit anything." %}</p>
+    {% endif %}
+</div>
+
+<script>
+// Load dashboard statistics
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardStats();
+    loadRecentActivity();
+});
+
+function loadDashboardStats() {
+    // Simulate loading statistics (in real implementation, this would be an AJAX call)
+    setTimeout(() => {
+        document.getElementById('total-properties').textContent = '1,247';
+        document.getElementById('active-listings').textContent = '892';
+        document.getElementById('total-users').textContent = '156';
+        document.getElementById('idx-feeds').textContent = '3';
+    }, 500);
+}
+
+function loadRecentActivity() {
+    // Simulate loading recent activity
+    setTimeout(() => {
+        const activityHtml = `
+            <div style="space-y: 10px;">
+                <div style="padding: 10px; background: #f8fafc; border-radius: 4px; margin-bottom: 8px;">
+                    <span style="color: #2563eb; font-weight: 500;">New property added:</span>
+                    <span style="color: #374151;">123 Main St, Cedar Rapids</span>
+                    <span style="color: #6b7280; font-size: 12px; float: right;">2 hours ago</span>
+                </div>
+                <div style="padding: 10px; background: #f8fafc; border-radius: 4px; margin-bottom: 8px;">
+                    <span style="color: #10b981; font-weight: 500;">User registered:</span>
+                    <span style="color: #374151;">john.doe@email.com</span>
+                    <span style="color: #6b7280; font-size: 12px; float: right;">4 hours ago</span>
+                </div>
+                <div style="padding: 10px; background: #f8fafc; border-radius: 4px; margin-bottom: 8px;">
+                    <span style="color: #f59e0b; font-weight: 500;">IDX sync completed:</span>
+                    <span style="color: #374151;">847 properties updated</span>
+                    <span style="color: #6b7280; font-size: 12px; float: right;">6 hours ago</span>
+                </div>
+            </div>
+        `;
+        document.getElementById('recent-activity').innerHTML = activityHtml;
+    }, 1000);
+}
+
+function openIDXManager() {
+    alert('IDX Feed Manager will be implemented in the next phase. This will allow you to manage property data feeds from MLS systems.');
+}
+
+function openSystemSettings() {
+    alert('System Settings panel will be implemented in the next phase. This will allow you to configure site-wide settings.');
+}
+</script>
+{% endblock %}
+

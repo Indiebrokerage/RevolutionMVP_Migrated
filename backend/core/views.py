@@ -373,3 +373,19 @@ def content_index(request, slug):
     return HttpResponse(f"content_index - Not Implemented for slug {slug}")
 
 
+
+
+def api_welcome(request):
+    """API welcome endpoint"""
+    return JsonResponse({
+        'message': 'Welcome to Revolution Realty API',
+        'version': '1.0',
+        'endpoints': {
+            'admin': '/admin/',
+            'api': '/api/',
+            'properties': '/api/property-search',
+            'agents': '/api/agent-list',
+            'vendors': '/api/vendor-list'
+        }
+    })
+
