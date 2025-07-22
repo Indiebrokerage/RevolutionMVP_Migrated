@@ -18,9 +18,8 @@ class CustomUserAdmin(BaseUserAdmin):
     search_fields = ('username', 'first_name', 'last_name', 'email')
     ordering = ('-date_joined',)
     
-    fieldsets = BaseUserAdmin.fieldsets + (
-        ('Additional Info', {'fields': ('last_login', 'date_joined')}),
-    )
+    # Use the default fieldsets without adding duplicates
+    # The default BaseUserAdmin already includes last_login and date_joined
 
 # Re-register UserAdmin with our custom version
 admin.site.unregister(DjangoUser)
