@@ -1,0 +1,478 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block title %}{{ title }} | Revolution Realty{% endblock %}
+
+{% block content %}
+<div class="modern-list-view">
+    <!-- Page Header -->
+    <div class="list-header">
+        <div class="header-content">
+            <h1 class="list-title">{{ title }}</h1>
+            <p class="list-subtitle">Manage {{ opts.verbose_name_plural|lower }} in your platform</p>
+        </div>
+        <div class="header-actions">
+            {% if has_add_permission %}
+                <a href="{% url cl.opts|admin_urlname:'add' %}" class="action-btn primary">
+                    <span class="icon">➕</span> Add {{ opts.verbose_name }}
+                </a>
+            {% endif %}
+            <button class="action-btn secondary" onclick="window.print()">
+                <span class="icon">🖨️</span> Export
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="list-controls">
+        <div class="search-section">
+            {% if cl.search_fields %}
+                <div class="search-box">
+                    <form method="get" class="search-form">
+                        <input type="search" 
+                               name="{{ search_var }}" 
+                               value="{{ cl.query }}"
+                               placeholder="Search {{ opts.verbose_name_plural|lower }}..."
+                               class="search-input">
+                        <button type="submit" class="search-btn">
+                            <span class="icon">🔍</span>
+                        </button>
+                        {% for key, value in cl.params.items %}
+                            {% if key != search_var %}
+                                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                            {% endif %}
+                        {% endfor %}
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+        
+        {% if cl.has_filters %}
+            <div class="filters-section">
+                <button class="filters-toggle" onclick="toggleFilters()">
+                    <span class="icon">🔽</span> Filters
+                </button>
+                <div class="filters-panel" id="filtersPanel">
+                    {% for spec in cl.filter_specs %}
+                        <div class="filter-group">
+                            <h4 class="filter-title">{{ spec.title }}</h4>
+                            <div class="filter-options">
+                                {% for choice in spec.choices %}
+                                    <a href="{{ choice.query_string|iriencode }}" 
+                                       class="filter-option {% if choice.selected %}active{% endif %}">
+                                        {{ choice.display }}
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Results Summary -->
+    <div class="results-summary">
+        <div class="summary-info">
+            <span class="results-count">{{ cl.result_count }} {{ opts.verbose_name_plural|lower }}</span>
+            {% if cl.result_count != cl.full_result_count %}
+                <span class="filtered-note">(filtered from {{ cl.full_result_count }} total)</span>
+            {% endif %}
+        </div>
+        
+        {% if action_form and actions_on_top and cl.show_admin_actions %}
+            <div class="bulk-actions">
+                <form method="post" class="action-form">
+                    {% csrf_token %}
+                    <select name="action" class="action-select">
+                        <option value="">Bulk actions...</option>
+                        {% for choice in action_form.action.field.choices %}
+                            <option value="{{ choice.0 }}">{{ choice.1 }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="action-btn secondary">Apply</button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Data Table -->
+    <div class="modern-table-container">
+        {% if cl.result_list %}
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        {% if action_form and cl.show_admin_actions %}
+                            <th class="action-checkbox-column">
+                                <input type="checkbox" id="action-toggle" class="action-select-all">
+                            </th>
+                        {% endif %}
+                        {% for header in result_headers %}
+                            <th class="column-{{ header.class_attrib }}{% if header.sortable %} sortable{% endif %}">
+                                {% if header.sortable %}
+                                    <a href="{{ header.url_primary }}" class="sort-link">
+                                        {{ header.text|capfirst }}
+                                        {% if header.sorted %}
+                                            <span class="sort-indicator">
+                                                {% if header.ascending %}↑{% else %}↓{% endif %}
+                                            </span>
+                                        {% endif %}
+                                    </a>
+                                {% else %}
+                                    {{ header.text|capfirst }}
+                                {% endif %}
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                        <tr class="table-row {% cycle 'row1' 'row2' %}">
+                            {% if action_form and cl.show_admin_actions %}
+                                <td class="action-checkbox">
+                                    <input type="checkbox" name="_selected_action" value="{{ result.pk }}" class="action-select">
+                                </td>
+                            {% endif %}
+                            {% for item in result %}
+                                <td class="table-cell">{{ item }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">📭</div>
+                <h3 class="empty-title">No {{ opts.verbose_name_plural|lower }} found</h3>
+                <p class="empty-description">
+                    {% if cl.query %}
+                        No results match your search criteria. Try adjusting your search terms.
+                    {% else %}
+                        Get started by adding your first {{ opts.verbose_name|lower }}.
+                    {% endif %}
+                </p>
+                {% if has_add_permission %}
+                    <a href="{% url cl.opts|admin_urlname:'add' %}" class="action-btn primary">
+                        <span class="icon">➕</span> Add {{ opts.verbose_name }}
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if cl.result_list and is_paginated %}
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Showing {{ cl.result_count }} of {{ cl.full_result_count }} results
+            </div>
+            <nav class="pagination">
+                {% if cl.result_list|length_is:'1' %}
+                    <span class="page-info">1 result</span>
+                {% else %}
+                    {% if cl.can_show_all %}
+                        <a href="?{% if cl.is_popup %}_popup=1&{% endif %}{{ cl.get_query_string|slice:"1:" }}" class="show-all">Show all</a>
+                    {% endif %}
+                    
+                    <div class="page-links">
+                        {% if cl.result_list.has_previous %}
+                            <a href="?{% if cl.is_popup %}_popup=1&{% endif %}{{ cl.get_query_string|slice:"1:" }}&p={{ cl.result_list.previous_page_number }}" class="page-link">
+                                ← Previous
+                            </a>
+                        {% endif %}
+                        
+                        <span class="page-current">
+                            Page {{ cl.result_list.number }} of {{ cl.result_list.paginator.num_pages }}
+                        </span>
+                        
+                        {% if cl.result_list.has_next %}
+                            <a href="?{% if cl.is_popup %}_popup=1&{% endif %}{{ cl.get_query_string|slice:"1:" }}&p={{ cl.result_list.next_page_number }}" class="page-link">
+                                Next →
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </nav>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function toggleFilters() {
+    const panel = document.getElementById('filtersPanel');
+    const toggle = document.querySelector('.filters-toggle');
+    
+    if (panel.style.display === 'none' || !panel.style.display) {
+        panel.style.display = 'block';
+        toggle.innerHTML = '<span class="icon">🔼</span> Hide Filters';
+    } else {
+        panel.style.display = 'none';
+        toggle.innerHTML = '<span class="icon">🔽</span> Show Filters';
+    }
+}
+
+// Initialize bulk actions
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('action-toggle');
+    const checkboxes = document.querySelectorAll('.action-select');
+    
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+    }
+    
+    // Update select all state when individual checkboxes change
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const checkedCount = document.querySelectorAll('.action-select:checked').length;
+            selectAll.checked = checkedCount === checkboxes.length;
+            selectAll.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+        });
+    });
+});
+</script>
+
+<style>
+/* Modern List View Styles */
+.modern-list-view {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.list-title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.list-subtitle {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.list-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.search-box {
+    flex: 1;
+    min-width: 300px;
+}
+
+.search-form {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.search-input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+}
+
+.search-btn {
+    padding: 0.75rem 1rem;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+}
+
+.filters-toggle {
+    padding: 0.75rem 1rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+}
+
+.filters-panel {
+    display: none;
+    position: absolute;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: 1rem;
+    z-index: 10;
+    min-width: 250px;
+}
+
+.filter-group {
+    margin-bottom: 1rem;
+}
+
+.filter-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.filter-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.filter-option {
+    padding: 0.5rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+}
+
+.filter-option:hover {
+    background: var(--bg-tertiary);
+}
+
+.filter-option.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+.results-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+}
+
+.results-count {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.filtered-note {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    margin-left: 0.5rem;
+}
+
+.modern-table-container {
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.modern-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.modern-table th {
+    background: var(--bg-secondary);
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modern-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.table-row:hover {
+    background: var(--bg-tertiary);
+}
+
+.sort-link {
+    color: var(--text-primary);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sort-indicator {
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.6;
+}
+
+.empty-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.empty-description {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+}
+
+.page-links {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.page-link {
+    padding: 0.5rem 1rem;
+    background: var(--bg-primary);
+    color: var(--primary-color);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.page-link:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.page-current {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+</style>
+{% endblock %}
+

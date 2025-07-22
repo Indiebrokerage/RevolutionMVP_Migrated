@@ -1,188 +1,240 @@
 {% extends "admin/base_site.html" %}
 {% load i18n static %}
 
-{% block title %}{{ title }} | {{ site_title|default:_('Revolution Realty Administration') }}{% endblock %}
-
-{% block breadcrumbs %}{% endblock %}
+{% block title %}Platform Dashboard | Revolution Realty{% endblock %}
 
 {% block content %}
-<div id="content-main">
-    <!-- Revolution Realty Dashboard Header -->
-    <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px;">
-        <h1 style="color: #374151; margin: 0 0 10px 0; font-size: 28px; font-weight: 600;">
-            🏠 Welcome to Revolution Realty Administration
-        </h1>
-        <p style="color: #6b7280; margin: 0; font-size: 16px;">
-            Manage your real estate portal, properties, clients, and IDX feeds from this central dashboard.
-        </p>
-    </div>
-
-    <!-- Statistics Cards -->
-    <div class="revolution-stats">
-        <div class="stat-card">
-            <div class="stat-number" id="total-properties">0</div>
-            <div class="stat-label">Total Properties</div>
+<div class="modern-dashboard">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="header-content">
+            <h1 class="dashboard-title">Platform Dashboard</h1>
+            <p class="dashboard-subtitle">Manage your real estate SaaS platform from this central command center</p>
         </div>
-        <div class="stat-card">
-            <div class="stat-number" id="active-listings">0</div>
-            <div class="stat-label">Active Listings</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number" id="total-users">0</div>
-            <div class="stat-label">Total Users</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number" id="idx-feeds">0</div>
-            <div class="stat-label">IDX Feeds</div>
+        <div class="header-actions">
+            <button class="action-btn primary">
+                <span class="icon">➕</span> Quick Add
+            </button>
+            <button class="action-btn secondary">
+                <span class="icon">📊</span> Reports
+            </button>
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="quick-actions">
-        <h3>🚀 Quick Actions</h3>
-        <div class="action-buttons">
-            <a href="/admin/auth/user/add/" class="action-btn">
-                👤 Add New User
-            </a>
-            <a href="/admin/core/" class="action-btn">
-                🏘️ Manage Properties
-            </a>
-            <a href="#" onclick="openIDXManager()" class="action-btn">
-                📡 IDX Feed Manager
-            </a>
-            <a href="/admin/auth/user/" class="action-btn">
-                👥 User Management
-            </a>
-            <a href="#" onclick="openSystemSettings()" class="action-btn">
-                ⚙️ System Settings
-            </a>
-            <a href="{{ request.scheme }}://{{ request.get_host }}/" target="_blank" class="action-btn">
-                🌐 View Live Site
-            </a>
-        </div>
-    </div>
-
-    <!-- Recent Activity -->
-    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 20px 0;">
-        <h3 style="color: #374151; margin-bottom: 15px; font-weight: 600;">📈 Recent Activity</h3>
-        <div id="recent-activity">
-            <p style="color: #6b7280; font-style: italic;">Loading recent activity...</p>
-        </div>
-    </div>
-
-    <!-- System Status -->
-    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 20px 0;">
-        <h3 style="color: #374151; margin-bottom: 15px; font-weight: 600;">🔧 System Status</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-            <div style="padding: 15px; background: #f0fdf4; border-radius: 6px; border-left: 4px solid #10b981;">
-                <div style="font-weight: 600; color: #065f46;">Database</div>
-                <div style="color: #047857; font-size: 14px;">✅ Connected</div>
+    <!-- Key Metrics -->
+    <div class="metrics-grid">
+        <div class="metric-card primary">
+            <div class="metric-icon">🏢</div>
+            <div class="metric-content">
+                <div class="metric-value">{{ total_tenants|default:0 }}</div>
+                <div class="metric-label">Active Tenants</div>
+                <div class="metric-change positive">+{{ recent_signups|default:0 }} this week</div>
             </div>
-            <div style="padding: 15px; background: #f0fdf4; border-radius: 6px; border-left: 4px solid #10b981;">
-                <div style="font-weight: 600; color: #065f46;">IDX Sync</div>
-                <div style="color: #047857; font-size: 14px;">✅ Active</div>
+        </div>
+        <div class="metric-card success">
+            <div class="metric-icon">💰</div>
+            <div class="metric-content">
+                <div class="metric-value">${{ monthly_recurring_revenue|default:0|floatformat:0 }}</div>
+                <div class="metric-label">Monthly Recurring Revenue</div>
+                <div class="metric-change positive">+12% from last month</div>
             </div>
-            <div style="padding: 15px; background: #f0fdf4; border-radius: 6px; border-left: 4px solid #10b981;">
-                <div style="font-weight: 600; color: #065f46;">Email Service</div>
-                <div style="color: #047857; font-size: 14px;">✅ Operational</div>
+        </div>
+        <div class="metric-card info">
+            <div class="metric-icon">🎯</div>
+            <div class="metric-content">
+                <div class="metric-value">1,247</div>
+                <div class="metric-label">Total Properties</div>
+                <div class="metric-change neutral">892 active listings</div>
             </div>
-            <div style="padding: 15px; background: #f0fdf4; border-radius: 6px; border-left: 4px solid #10b981;">
-                <div style="font-weight: 600; color: #065f46;">Storage</div>
-                <div style="color: #047857; font-size: 14px;">✅ Available</div>
+        </div>
+        <div class="metric-card warning">
+            <div class="metric-icon">👥</div>
+            <div class="metric-content">
+                <div class="metric-value">156</div>
+                <div class="metric-label">Total Users</div>
+                <div class="metric-change positive">+8 this week</div>
             </div>
         </div>
     </div>
 
-    <!-- Default Django Admin Content -->
-    {% if app_list %}
-        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 20px 0;">
-            <h3 style="color: #374151; margin-bottom: 15px; font-weight: 600;">📋 Administration Modules</h3>
-            {% for app in app_list %}
-                <div class="app-{{ app.app_label }} module">
-                    <table>
-                        <caption>
-                            <a href="{{ app.app_url }}" class="section" title="{% blocktrans with name=app.name %}Models in the {{ name }} application{% endblocktrans %}">{{ app.name }}</a>
-                        </caption>
-                        {% for model in app.models %}
-                            <tr class="model-{{ model.object_name|lower }}">
-                                {% if model.admin_url %}
-                                    <th scope="row"><a href="{{ model.admin_url }}">{{ model.name }}</a></th>
-                                {% else %}
-                                    <th scope="row">{{ model.name }}</th>
-                                {% endif %}
-
-                                {% if model.add_url %}
-                                    <td><a href="{{ model.add_url }}" class="addlink">{% trans 'Add' %}</a></td>
-                                {% else %}
-                                    <td>&nbsp;</td>
-                                {% endif %}
-
-                                {% if model.admin_url %}
-                                    <td><a href="{{ model.admin_url }}" class="changelink">{% trans 'Change' %}</a></td>
-                                {% else %}
-                                    <td>&nbsp;</td>
-                                {% endif %}
-                            </tr>
-                        {% endfor %}
-                    </table>
+    <!-- Quick Actions Grid -->
+    <div class="dashboard-grid">
+        <!-- Left Column -->
+        <div class="dashboard-column">
+            <!-- Quick Actions -->
+            <div class="dashboard-widget">
+                <div class="widget-header">
+                    <h3 class="widget-title">🚀 Quick Actions</h3>
                 </div>
-            {% endfor %}
+                <div class="widget-content">
+                    <div class="quick-actions">
+                        <a href="/admin/core/tenant/add/" class="quick-action">
+                            <div class="action-icon">🏢</div>
+                            <div class="action-content">
+                                <div class="action-title">Add New Tenant</div>
+                                <div class="action-desc">Create a new agency account</div>
+                            </div>
+                        </a>
+                        <a href="/admin/core/lead/add/" class="quick-action">
+                            <div class="action-icon">🎯</div>
+                            <div class="action-content">
+                                <div class="action-title">Add Lead</div>
+                                <div class="action-desc">Create new lead entry</div>
+                            </div>
+                        </a>
+                        <a href="/admin/core/property/add/" class="quick-action">
+                            <div class="action-icon">🏘️</div>
+                            <div class="action-content">
+                                <div class="action-title">Add Property</div>
+                                <div class="action-desc">List new property</div>
+                            </div>
+                        </a>
+                        <a href="/admin/core/subscriptionplan/" class="quick-action">
+                            <div class="action-icon">💰</div>
+                            <div class="action-content">
+                                <div class="action-title">Manage Plans</div>
+                                <div class="action-desc">Configure subscription tiers</div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="dashboard-widget">
+                <div class="widget-header">
+                    <h3 class="widget-title">📈 Recent Activity</h3>
+                    <a href="#" class="widget-action">View All</a>
+                </div>
+                <div class="widget-content">
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <div class="activity-icon success">🏠</div>
+                            <div class="activity-content">
+                                <div class="activity-title">New property added</div>
+                                <div class="activity-desc">123 Main St, Cedar Rapids</div>
+                                <div class="activity-time">2 hours ago</div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon info">👤</div>
+                            <div class="activity-content">
+                                <div class="activity-title">User registered</div>
+                                <div class="activity-desc">john.doe@email.com</div>
+                                <div class="activity-time">4 hours ago</div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon warning">🔄</div>
+                            <div class="activity-content">
+                                <div class="activity-title">IDX sync completed</div>
+                                <div class="activity-desc">847 properties updated</div>
+                                <div class="activity-time">6 hours ago</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    {% else %}
-        <p>{% trans "You don't have permission to edit anything." %}</p>
-    {% endif %}
+
+        <!-- Right Column -->
+        <div class="dashboard-column">
+            <!-- System Status -->
+            <div class="dashboard-widget">
+                <div class="widget-header">
+                    <h3 class="widget-title">🔧 System Status</h3>
+                </div>
+                <div class="widget-content">
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <div class="status-indicator success"></div>
+                            <div class="status-content">
+                                <div class="status-title">Database</div>
+                                <div class="status-desc">Connected</div>
+                            </div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-indicator success"></div>
+                            <div class="status-content">
+                                <div class="status-title">IDX Sync</div>
+                                <div class="status-desc">Active</div>
+                            </div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-indicator success"></div>
+                            <div class="status-content">
+                                <div class="status-title">Email Service</div>
+                                <div class="status-desc">Operational</div>
+                            </div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-indicator success"></div>
+                            <div class="status-content">
+                                <div class="status-title">Storage</div>
+                                <div class="status-desc">Available</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Platform Analytics -->
+            <div class="dashboard-widget">
+                <div class="widget-header">
+                    <h3 class="widget-title">📊 Platform Analytics</h3>
+                    <select class="widget-select">
+                        <option>Last 7 days</option>
+                        <option>Last 30 days</option>
+                        <option>Last 90 days</option>
+                    </select>
+                </div>
+                <div class="widget-content">
+                    <div class="analytics-chart">
+                        <div class="chart-placeholder">
+                            <div class="chart-icon">📈</div>
+                            <div class="chart-text">Revenue Growth Chart</div>
+                            <div class="chart-subtext">Interactive charts coming soon</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Performing Tenants -->
+            <div class="dashboard-widget">
+                <div class="widget-header">
+                    <h3 class="widget-title">🏆 Top Performing Tenants</h3>
+                </div>
+                <div class="widget-content">
+                    <div class="tenant-list">
+                        <div class="tenant-item">
+                            <div class="tenant-avatar">🏢</div>
+                            <div class="tenant-content">
+                                <div class="tenant-name">Premium Realty Group</div>
+                                <div class="tenant-metric">$2,450 MRR</div>
+                            </div>
+                            <div class="tenant-badge enterprise">Enterprise</div>
+                        </div>
+                        <div class="tenant-item">
+                            <div class="tenant-avatar">🏠</div>
+                            <div class="tenant-content">
+                                <div class="tenant-name">Metro Properties</div>
+                                <div class="tenant-metric">$1,890 MRR</div>
+                            </div>
+                            <div class="tenant-badge professional">Professional</div>
+                        </div>
+                        <div class="tenant-item">
+                            <div class="tenant-avatar">🌟</div>
+                            <div class="tenant-content">
+                                <div class="tenant-name">Elite Homes</div>
+                                <div class="tenant-metric">$1,250 MRR</div>
+                            </div>
+                            <div class="tenant-badge professional">Professional</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-
-<script>
-// Load dashboard statistics
-document.addEventListener('DOMContentLoaded', function() {
-    loadDashboardStats();
-    loadRecentActivity();
-});
-
-function loadDashboardStats() {
-    // Simulate loading statistics (in real implementation, this would be an AJAX call)
-    setTimeout(() => {
-        document.getElementById('total-properties').textContent = '1,247';
-        document.getElementById('active-listings').textContent = '892';
-        document.getElementById('total-users').textContent = '156';
-        document.getElementById('idx-feeds').textContent = '3';
-    }, 500);
-}
-
-function loadRecentActivity() {
-    // Simulate loading recent activity
-    setTimeout(() => {
-        const activityHtml = `
-            <div style="space-y: 10px;">
-                <div style="padding: 10px; background: #f8fafc; border-radius: 4px; margin-bottom: 8px;">
-                    <span style="color: #2563eb; font-weight: 500;">New property added:</span>
-                    <span style="color: #374151;">123 Main St, Cedar Rapids</span>
-                    <span style="color: #6b7280; font-size: 12px; float: right;">2 hours ago</span>
-                </div>
-                <div style="padding: 10px; background: #f8fafc; border-radius: 4px; margin-bottom: 8px;">
-                    <span style="color: #10b981; font-weight: 500;">User registered:</span>
-                    <span style="color: #374151;">john.doe@email.com</span>
-                    <span style="color: #6b7280; font-size: 12px; float: right;">4 hours ago</span>
-                </div>
-                <div style="padding: 10px; background: #f8fafc; border-radius: 4px; margin-bottom: 8px;">
-                    <span style="color: #f59e0b; font-weight: 500;">IDX sync completed:</span>
-                    <span style="color: #374151;">847 properties updated</span>
-                    <span style="color: #6b7280; font-size: 12px; float: right;">6 hours ago</span>
-                </div>
-            </div>
-        `;
-        document.getElementById('recent-activity').innerHTML = activityHtml;
-    }, 1000);
-}
-
-function openIDXManager() {
-    alert('IDX Feed Manager will be implemented in the next phase. This will allow you to manage property data feeds from MLS systems.');
-}
-
-function openSystemSettings() {
-    alert('System Settings panel will be implemented in the next phase. This will allow you to configure site-wide settings.');
-}
-</script>
 {% endblock %}
 
