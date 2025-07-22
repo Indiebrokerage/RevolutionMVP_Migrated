@@ -3,9 +3,10 @@ from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 from core import views
+from core.admin import admin_site  # Import custom admin site
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path("admin/", admin_site.urls),  # Use custom SaaS admin site
     # Include core app URLs (which includes API routes)
     path("", include('core.urls')),
 ]

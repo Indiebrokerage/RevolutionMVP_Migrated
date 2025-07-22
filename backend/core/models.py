@@ -492,3 +492,7 @@ class RouteMatrix(models.Model):
     permissions = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
+
+# Import all SaaS models to make them available to Django
+from .saas_models import *
+
