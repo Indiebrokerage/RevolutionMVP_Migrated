@@ -1,360 +1,494 @@
-# RevolutionMVP_Django/core/models.py
+# Revolution Realty - Enhanced Models
+# Inspired by BoomTown, Commissions Inc, FollowUp Boss, Asana, Trello, Squarespace, Real Geeks, and Airbnb
 
 from django.db import models
+from django.contrib.auth.models import User
+from django.utils import timezone
+from django.core.validators import MinValueValidator, MaxValueValidator
+import uuid
 
-# Model for mail_activity_log
-class MailActivityLog(models.Model):
-    id = models.AutoField(primary_key=True)
-    from_id = models.IntegerField()
-    from_mail = models.TextField(null=True, blank=True)
-    from_type = models.IntegerField(help_text='1 : send from contacts , 2 : send from inquiries')
-    from_name = models.CharField(max_length=255, null=True, blank=True)
-    to_id = models.IntegerField()
-    to_mail = models.TextField(null=True, blank=True)
-    to_type = models.IntegerField(help_text='1 : send from contacts , 2 : send from inquiries')
-    to_name = models.CharField(max_length=255, null=True, blank=True)
-    subject = models.TextField(null=True, blank=True)
-    content = models.TextField(null=True, blank=True)
-    send_at = models.DateTimeField(null=True, blank=True)
-    attach_file = models.TextField(null=True, blank=True)
-    status_type = models.IntegerField(default=1, help_text='1:sended , 2:reply')
-    message_id = models.CharField(max_length=255, null=True, blank=True)
-    parent_message_id = models.CharField(max_length=255, null=True, blank=True)
-    parent_id = models.CharField(max_length=255, null=True, blank=True)
-    send_status = models.IntegerField(default=0, help_text='1 : send success , 0 : send false')
-    create_at = models.DateTimeField(null=True, blank=True)
-    create_ip = models.IntegerField(null=True, blank=True)
-    is_readed = models.IntegerField(default=0, null=True, blank=True, help_text='0: mail not read , 1 : mail had readed ')
+# ============================================================================
+# LEAD MANAGEMENT (BoomTown + FollowUp Boss Inspired)
+# ============================================================================
 
-    class Meta:
-        db_table = 'mail_activity_log'
-
-# Model for mail_signature
-class MailSignature(models.Model):
-    id = models.AutoField(primary_key=True)
-    user_id = models.IntegerField()
-    status = models.IntegerField(null=True, blank=True, help_text='1 : use signature , 0 : not use signature')
-    signature = models.TextField(null=True, blank=True)
-    update_at = models.DateTimeField(null=True, blank=True)
-    create_at = models.DateTimeField(null=True, blank=True)
-    create_ip = models.IntegerField(null=True, blank=True)
-    update_ip = models.IntegerField(null=True, blank=True)
-
-    class Meta:
-        db_table = 'mail_signature'
-
-# Model for route_matrix (assuming it's a control table)
-class RouteMatrix(models.Model):
-    id = models.AutoField(primary_key=True)
-    route_name = models.CharField(max_length=255)
-    guest = models.IntegerField()
-    user = models.IntegerField()
-    vendor = models.IntegerField()
-    agent = models.IntegerField()
-    system_admin = models.IntegerField()
-    super_admin = models.IntegerField()
-
-    class Meta:
-        db_table = 'route_matrix'
-
-# Model for dat_property_import (partial definition based on ALTER TABLE)
-class DatPropertyImport(models.Model):
-    # Assuming existing fields, adding status_rest
-    status_rest = models.TextField(null=True, blank=True, help_text='Status of Property in Matrix Stite')
-
-    class Meta:
-        db_table = 'dat_property_import'
-        managed = False # This table's full schema is not defined here, only altered
-
-# Model for dat_property (partial definition based on ALTER TABLE)
-class DatProperty(models.Model):
-    # Assuming existing fields, adding status_rest, open_house_from, open_house_to, status_manual
-    status_rest = models.TextField(null=True, blank=True, help_text='Status of Property in Matrix Stite')
-    open_house_from = models.DateTimeField(null=True, blank=True)
-    open_house_to = models.DateTimeField(null=True, blank=True)
-    status_manual = models.IntegerField(default=0, null=True, blank=True, help_text='status set by user . 0 : none , 1: opend house,...')
-
-    class Meta:
-        db_table = 'dat_property'
-        managed = False # This table's full schema is not defined here, only altered
-
-# Model for ctr_property_column
-class CtrPropertyColumn(models.Model):
-    column_name = models.CharField(max_length=255)
-
-    class Meta:
-        db_table = 'ctr_property_column'
-        managed = False # This table's full schema is not defined here, only altered
-
-# Model for lnk_column_map
-class LnkColumnMap(models.Model):
-    feed_column_id = models.IntegerField()
-    column_name = models.CharField(max_length=255)
-    additional_logic = models.TextField(null=True, blank=True)
-
-    class Meta:
-        db_table = 'lnk_column_map'
-        managed = False # This table's full schema is not defined here, only altered
-
-# Model for contacts_searches
-class ContactsSearches(models.Model):
-    id = models.AutoField(primary_key=True)
-    keyword = models.TextField(null=True, blank=True)
-    type = models.CharField(max_length=255, null=True, blank=True)
-    name = models.CharField(max_length=255, null=True, blank=True)
-    user_id = models.IntegerField()
-    region = models.CharField(max_length=255, null=True, blank=True)
-    date_login_from = models.DateTimeField(null=True, blank=True)
-    date_login_to = models.DateTimeField(null=True, blank=True)
-    login_count = models.CharField(max_length=255, null=True, blank=True)
-    created_at = models.DateTimeField(null=True, blank=True)
-    user_created = models.IntegerField(null=True, blank=True)
-    updated_at = models.DateTimeField(null=True, blank=True)
-    user_updated = models.IntegerField(null=True, blank=True)
-
-    class Meta:
-        db_table = 'contacts_searches'
-
-# Model for dat_awards
-class DatAwards(models.Model):
-    id = models.AutoField(primary_key=True)
-    user_id = models.IntegerField(null=True, blank=True)
-    title = models.TextField(null=True, blank=True)
-    content = models.TextField(null=True, blank=True)
-    image = models.TextField(null=True, blank=True)
-    created_at = models.DateTimeField(null=True, blank=True)
-    created_id = models.IntegerField(null=True, blank=True)
-    updated_at = models.DateTimeField(null=True, blank=True)
-    updated_id = models.IntegerField(null=True, blank=True)
-
-    class Meta:
-        db_table = 'dat_awards'
-
-# Model for dat_user_attribute (partial definition based on ALTER TABLE)
-class DatUserAttribute(models.Model):
-    # Assuming existing fields, adding cover_image, googlemap_lt, googlemap_ln
-    cover_image = models.TextField(null=True, blank=True)
-    googlemap_lt = models.CharField(max_length=255, null=True, blank=True)
-    googlemap_ln = models.CharField(max_length=255, null=True, blank=True)
-
-    class Meta:
-        db_table = 'dat_user_attribute'
-        managed = False # This table's full schema is not defined here, only altered
-
-# Model for dat_projects
-class DatProjects(models.Model):
-    id = models.AutoField(primary_key=True)
-    user_id = models.IntegerField(null=True, blank=True)
-    title = models.TextField(null=True, blank=True)
-    content = models.TextField(null=True, blank=True)
-    image = models.TextField(null=True, blank=True)
-    date_created = models.DateField(null=True, blank=True)
-    city = models.TextField(null=True, blank=True)
-    state = models.TextField(null=True, blank=True)
-    number_view = models.IntegerField(null=True, blank=True)
-    zip = models.TextField(null=True, blank=True)
-    created_id = models.IntegerField(null=True, blank=True)
-    created_at = models.DateTimeField(null=True, blank=True)
-    update_id = models.IntegerField(null=True, blank=True)
-    update_at = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        db_table = 'dat_projects'
-
-# Model for dat_projects_images
-class DatProjectsImages(models.Model):
-    id = models.AutoField(primary_key=True)
-    projects_id = models.IntegerField(null=True, blank=True)
-    title = models.TextField(null=True, blank=True)
-    content = models.TextField(null=True, blank=True)
-    image = models.TextField(null=True, blank=True)
-    created_id = models.IntegerField(null=True, blank=True)
-    created_at = models.DateTimeField(null=True, blank=True)
-    update_id = models.IntegerField(null=True, blank=True)
-    update_at = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        db_table = 'dat_projects_images'
-
-# Model for dat_projects_videos
-class DatProjectsVideos(models.Model):
-    id = models.AutoField(primary_key=True)
-    projects_id = models.IntegerField(null=True, blank=True)
-    title = models.TextField(null=True, blank=True)
-    content = models.TextField(null=True, blank=True)
-    video_url = models.TextField(null=True, blank=True)
-    created_id = models.IntegerField(null=True, blank=True)
-    created_at = models.DateTimeField(null=True, blank=True)
-    update_id = models.IntegerField(null=True, blank=True)
-    update_at = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        db_table = 'dat_projects_videos'
-
-# Model for ctr_table_type
-class CtrTableType(models.Model):
-    table_name = models.CharField(max_length=255)
-
-    class Meta:
-        db_table = 'ctr_table_type'
-        managed = False # This table's full schema is not defined here, only altered
-
-# Model for ctr_tables
-class CtrTables(models.Model):
-    name = models.CharField(max_length=255, null=True, blank=True)
-    parent_id = models.IntegerField(null=True, blank=True)
-    type_id = models.IntegerField(null=True, blank=True)
-    client_id = models.IntegerField(null=True, blank=True)
-
-    class Meta:
-        db_table = 'ctr_tables'
-        managed = False # This table's full schema is not defined here, only altered
-
-# Model for user_bookmark_project
-class UserBookmarkProject(models.Model):
-    id = models.AutoField(primary_key=True)
-    user_id = models.IntegerField()
-    project_id = models.IntegerField()
-    book_mark_flash = models.SmallIntegerField(default=0, help_text='0 is unsaved, 1 is saved')
-    created_at = models.DateTimeField(null=True, blank=True)
-    updated_at = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        db_table = 'user_bookmark_project'
-
-# Model for vendor_rating
-class VendorRating(models.Model):
-    id = models.AutoField(primary_key=True)
-    user_reviewed_id = models.IntegerField()
-    user_id = models.IntegerField()
-    first_name = models.CharField(max_length=255)
-    last_name = models.CharField(max_length=255)
-    email = models.CharField(max_length=255)
-    appreciation = models.TextField()
-    score = models.IntegerField()
-    user_created = models.IntegerField()
-    user_updated = models.IntegerField()
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
-
-    class Meta:
-        db_table = 'vendor_rating'
-
-# Model for comment_review
-class CommentReview(models.Model):
-    id = models.AutoField(primary_key=True)
-    id_review = models.IntegerField(null=True, blank=True)
-    user_comment = models.IntegerField(null=True, blank=True)
-    comment = models.TextField()
-    created_at = models.DateTimeField(null=True, blank=True)
-    updated_at = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        db_table = 'comment_review'
-
-# Model for dat_contacts (partial definition based on ALTER TABLE)
-class DatContacts(models.Model):
-    # Assuming existing fields, adding is_hide_display
-    is_hide_display = models.IntegerField(default=1, null=True, blank=True, help_text='show or hide question in list vendor detail . 0 : show , 1: hide')
-
-    class Meta:
-        db_table = 'dat_contacts'
-        managed = False # This table's full schema is not defined here, only altered
-
-# Model for dat_like_reviews
-class DatLikeReviews(models.Model):
-    id = models.AutoField(primary_key=True)
-    user_id = models.IntegerField(null=True, blank=True)
-    vendor_rating_id = models.IntegerField(null=True, blank=True)
-    status = models.IntegerField(null=True, blank=True, help_text='0 : like , 1: unlike')
+class LeadSource(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    cost_per_lead = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    conversion_rate = models.FloatField(default=0)
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    created_id = models.IntegerField()
-    update_at = models.DateTimeField(auto_now=True)
-    update_id = models.IntegerField()
+    
+    def __str__(self):
+        return self.name
 
+class Lead(models.Model):
+    LEAD_STATUS_CHOICES = [
+        ('new', 'New Lead'),
+        ('contacted', 'Contacted'),
+        ('qualified', 'Qualified'),
+        ('nurturing', 'Nurturing'),
+        ('hot', 'Hot Lead'),
+        ('appointment', 'Appointment Set'),
+        ('showing', 'Property Showing'),
+        ('offer', 'Offer Made'),
+        ('contract', 'Under Contract'),
+        ('closed', 'Closed'),
+        ('lost', 'Lost'),
+        ('unqualified', 'Unqualified'),
+    ]
+    
+    LEAD_TYPE_CHOICES = [
+        ('buyer', 'Buyer'),
+        ('seller', 'Seller'),
+        ('investor', 'Investor'),
+        ('renter', 'Renter'),
+    ]
+    
+    # Basic Information
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
+    email = models.EmailField(unique=True)
+    phone = models.CharField(max_length=20, blank=True)
+    
+    # Lead Details
+    status = models.CharField(max_length=20, choices=LEAD_STATUS_CHOICES, default='new')
+    lead_type = models.CharField(max_length=20, choices=LEAD_TYPE_CHOICES, default='buyer')
+    source = models.ForeignKey(LeadSource, on_delete=models.SET_NULL, null=True)
+    assigned_agent = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='assigned_leads')
+    
+    # Scoring and Analytics (BoomTown Style)
+    lead_score = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
+    last_activity = models.DateTimeField(auto_now=True)
+    next_followup = models.DateTimeField(null=True, blank=True)
+    
+    # Property Preferences
+    min_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    max_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    preferred_areas = models.TextField(blank=True)
+    bedrooms = models.IntegerField(null=True, blank=True)
+    bathrooms = models.DecimalField(max_digits=3, decimal_places=1, null=True, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
     class Meta:
-        db_table = 'dat_like_reviews'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} - {self.get_status_display()}"
 
-# Sentinel Models (from migration_cartalyst_sentinel.php)
+# ============================================================================
+# TRANSACTION MANAGEMENT (Commissions Inc Inspired)
+# ============================================================================
 
-class Activation(models.Model):
-    id = models.AutoField(primary_key=True)
-    user_id = models.IntegerField(db_index=True)
-    code = models.CharField(max_length=255)
-    completed = models.BooleanField(default=False)
+class Transaction(models.Model):
+    TRANSACTION_STATUS_CHOICES = [
+        ('prospect', 'Prospect'),
+        ('listing_agreement', 'Listing Agreement'),
+        ('buyer_agreement', 'Buyer Agreement'),
+        ('showing', 'Showing Properties'),
+        ('offer_submitted', 'Offer Submitted'),
+        ('negotiating', 'Negotiating'),
+        ('under_contract', 'Under Contract'),
+        ('inspection', 'Inspection Period'),
+        ('appraisal', 'Appraisal'),
+        ('financing', 'Financing'),
+        ('final_walkthrough', 'Final Walkthrough'),
+        ('closing', 'Closing'),
+        ('closed', 'Closed'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    TRANSACTION_TYPE_CHOICES = [
+        ('listing', 'Listing'),
+        ('buyer_side', 'Buyer Side'),
+        ('dual_agency', 'Dual Agency'),
+    ]
+    
+    # Basic Information
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name='transactions')
+    property_address = models.CharField(max_length=255)
+    
+    # Transaction Details
+    status = models.CharField(max_length=30, choices=TRANSACTION_STATUS_CHOICES, default='prospect')
+    transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPE_CHOICES)
+    listing_agent = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='listing_transactions')
+    buyer_agent = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='buyer_transactions')
+    
+    # Financial Information
+    list_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    sale_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    commission_rate = models.DecimalField(max_digits=5, decimal_places=3, default=0.06)  # 6%
+    estimated_commission = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    
+    # Important Dates
+    contract_date = models.DateField(null=True, blank=True)
+    closing_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def save(self, *args, **kwargs):
+        if self.sale_price and self.commission_rate:
+            self.estimated_commission = self.sale_price * self.commission_rate
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"{self.property_address} - {self.get_status_display()}"
+
+# ============================================================================
+# TASK MANAGEMENT (Asana + Trello Inspired)
+# ============================================================================
+
+class TaskBoard(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    team_members = models.ManyToManyField(User, related_name='task_boards', blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.name
+
+class TaskList(models.Model):
+    board = models.ForeignKey(TaskBoard, on_delete=models.CASCADE, related_name='task_lists')
+    name = models.CharField(max_length=100)
+    position = models.IntegerField(default=0)
+    
+    class Meta:
+        ordering = ['position']
+    
+    def __str__(self):
+        return f"{self.board.name} - {self.name}"
+
+class Task(models.Model):
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ]
+    
+    # Basic Information
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    task_list = models.ForeignKey(TaskList, on_delete=models.CASCADE, related_name='tasks')
+    
+    # Assignment and Priority
+    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_tasks')
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    
+    # Relationships
+    lead = models.ForeignKey(Lead, on_delete=models.SET_NULL, null=True, blank=True)
+    transaction = models.ForeignKey(Transaction, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # Status and Timing
+    is_completed = models.BooleanField(default=False)
+    due_date = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    position = models.IntegerField(default=0)
+    
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    
     class Meta:
-        db_table = 'activations'
+        ordering = ['position', '-created_at']
+    
+    def __str__(self):
+        return self.title
 
-class Persistence(models.Model):
-    id = models.AutoField(primary_key=True)
-    user_id = models.IntegerField(db_index=True)
-    code = models.CharField(max_length=255, unique=True)
+# ============================================================================
+# PROPERTY MANAGEMENT (Real Geeks + Airbnb Inspired)
+# ============================================================================
+
+class Property(models.Model):
+    PROPERTY_TYPE_CHOICES = [
+        ('single_family', 'Single Family Home'),
+        ('condo', 'Condominium'),
+        ('townhouse', 'Townhouse'),
+        ('multi_family', 'Multi-Family'),
+        ('land', 'Land'),
+        ('commercial', 'Commercial'),
+        ('investment', 'Investment Property'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('pending', 'Pending'),
+        ('sold', 'Sold'),
+        ('withdrawn', 'Withdrawn'),
+        ('expired', 'Expired'),
+    ]
+    
+    # Basic Information
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    mls_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
+    address = models.CharField(max_length=255)
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=50)
+    zip_code = models.CharField(max_length=10)
+    
+    # Property Details
+    property_type = models.CharField(max_length=20, choices=PROPERTY_TYPE_CHOICES)
+    bedrooms = models.IntegerField()
+    bathrooms = models.DecimalField(max_digits=3, decimal_places=1)
+    square_feet = models.IntegerField(null=True, blank=True)
+    lot_size = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    year_built = models.IntegerField(null=True, blank=True)
+    
+    # Listing Information
+    list_price = models.DecimalField(max_digits=12, decimal_places=2)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    listing_agent = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    listing_date = models.DateField(auto_now_add=True)
+    
+    # Marketing
+    description = models.TextField(blank=True)
+    features = models.TextField(blank=True)  # JSON field for amenities
+    virtual_tour_url = models.URLField(blank=True)
+    
+    # Analytics (Airbnb Style)
+    view_count = models.IntegerField(default=0)
+    favorite_count = models.IntegerField(default=0)
+    inquiry_count = models.IntegerField(default=0)
+    
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.address}, {self.city} - ${self.list_price:,.0f}"
 
+class PropertyImage(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to='property_images/')
+    caption = models.CharField(max_length=200, blank=True)
+    is_primary = models.BooleanField(default=False)
+    position = models.IntegerField(default=0)
+    
     class Meta:
-        db_table = 'persistences'
+        ordering = ['position']
 
-class Reminder(models.Model):
-    id = models.AutoField(primary_key=True)
-    user_id = models.IntegerField(db_index=True)
-    code = models.CharField(max_length=255)
-    completed = models.BooleanField(default=False)
+# ============================================================================
+# COMMUNICATION & ACTIVITY TRACKING (FollowUp Boss Inspired)
+# ============================================================================
+
+class Activity(models.Model):
+    ACTIVITY_TYPE_CHOICES = [
+        ('call', 'Phone Call'),
+        ('email', 'Email'),
+        ('text', 'Text Message'),
+        ('meeting', 'Meeting'),
+        ('showing', 'Property Showing'),
+        ('note', 'Note'),
+        ('task', 'Task'),
+        ('document', 'Document'),
+    ]
+    
+    # Basic Information
+    activity_type = models.CharField(max_length=20, choices=ACTIVITY_TYPE_CHOICES)
+    subject = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    
+    # Relationships
+    lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name='activities', null=True, blank=True)
+    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name='activities', null=True, blank=True)
+    property = models.ForeignKey(Property, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # User Information
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    participants = models.ManyToManyField(User, related_name='participated_activities', blank=True)
+    
+    # Scheduling
+    scheduled_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    is_completed = models.BooleanField(default=False)
+    
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    
     class Meta:
-        db_table = 'reminders'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.get_activity_type_display()}: {self.subject}"
 
+# ============================================================================
+# SYSTEM SETTINGS (Squarespace Inspired)
+# ============================================================================
+
+class SiteSettings(models.Model):
+    # Site Identity
+    site_name = models.CharField(max_length=100, default="Revolution Realty")
+    tagline = models.CharField(max_length=200, blank=True)
+    logo = models.ImageField(upload_to='site_assets/', null=True, blank=True)
+    favicon = models.ImageField(upload_to='site_assets/', null=True, blank=True)
+    
+    # Contact Information
+    phone = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(blank=True)
+    address = models.TextField(blank=True)
+    
+    # Social Media
+    facebook_url = models.URLField(blank=True)
+    instagram_url = models.URLField(blank=True)
+    linkedin_url = models.URLField(blank=True)
+    twitter_url = models.URLField(blank=True)
+    
+    # SEO Settings
+    meta_description = models.TextField(max_length=160, blank=True)
+    meta_keywords = models.TextField(blank=True)
+    google_analytics_id = models.CharField(max_length=50, blank=True)
+    
+    # Email Configuration
+    smtp_host = models.CharField(max_length=100, blank=True)
+    smtp_port = models.IntegerField(default=587)
+    smtp_username = models.CharField(max_length=100, blank=True)
+    smtp_password = models.CharField(max_length=100, blank=True)
+    
+    # IDX Settings
+    idx_provider = models.CharField(max_length=100, blank=True)
+    idx_api_key = models.CharField(max_length=255, blank=True)
+    idx_feed_url = models.URLField(blank=True)
+    
+    # Theme Settings
+    primary_color = models.CharField(max_length=7, default="#3B82F6")  # Blue
+    secondary_color = models.CharField(max_length=7, default="#10B981")  # Green
+    accent_color = models.CharField(max_length=7, default="#F59E0B")  # Orange
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Site Settings"
+        verbose_name_plural = "Site Settings"
+    
+    def __str__(self):
+        return f"Site Settings - {self.site_name}"
+
+# ============================================================================
+# LEGACY MODELS (From Original System)
+# ============================================================================
+
+# Sentinel Authentication Models
 class Role(models.Model):
-    id = models.AutoField(primary_key=True)
-    slug = models.CharField(max_length=255, unique=True)
     name = models.CharField(max_length=255)
-    permissions = models.TextField(null=True, blank=True)
+    slug = models.CharField(max_length=255)
+    permissions = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'roles'
 
 class RoleUser(models.Model):
     user_id = models.IntegerField()
     role_id = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
-        db_table = 'role_users'
-        unique_together = (('user_id', 'role_id'),)
+class Activation(models.Model):
+    user_id = models.IntegerField()
+    code = models.CharField(max_length=255)
+    completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+class Persistence(models.Model):
+    user_id = models.IntegerField()
+    code = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+class Reminder(models.Model):
+    user_id = models.IntegerField()
+    code = models.CharField(max_length=255)
+    completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 class Throttle(models.Model):
-    id = models.AutoField(primary_key=True)
-    user_id = models.IntegerField(null=True, blank=True, db_index=True)
+    user_id = models.IntegerField(null=True, blank=True)
     type = models.CharField(max_length=255)
     ip = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
-        db_table = 'throttle'
-
-class User(models.Model):
-    id = models.AutoField(primary_key=True)
-    email = models.CharField(max_length=255, unique=True)
-    password = models.CharField(max_length=255)
-    permissions = models.TextField(null=True, blank=True)
-    last_login = models.DateTimeField(null=True, blank=True)
-    first_name = models.CharField(max_length=255, null=True, blank=True)
-    last_name = models.CharField(max_length=255, null=True, blank=True)
+# Legacy Project Models
+class DatAwards(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
-        db_table = 'users'
+class DatProjects(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
+class DatProjectsImages(models.Model):
+    project = models.ForeignKey(DatProjects, on_delete=models.CASCADE)
+    image_path = models.CharField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class DatProjectsVideos(models.Model):
+    project = models.ForeignKey(DatProjects, on_delete=models.CASCADE)
+    video_path = models.CharField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+# Communication Models
+class MailActivityLog(models.Model):
+    user_id = models.IntegerField()
+    subject = models.CharField(max_length=255)
+    message = models.TextField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+class MailSignature(models.Model):
+    user_id = models.IntegerField()
+    signature = models.TextField()
+    is_default = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class ContactsSearches(models.Model):
+    user_id = models.IntegerField()
+    search_term = models.CharField(max_length=255)
+    results_count = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+# Review Models
+class VendorRating(models.Model):
+    vendor_name = models.CharField(max_length=255)
+    rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    review = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class CommentReview(models.Model):
+    user_id = models.IntegerField()
+    comment = models.TextField()
+    rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class DatLikeReviews(models.Model):
+    user_id = models.IntegerField()
+    review_id = models.IntegerField()
+    liked = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+# Utility Models
+class UserBookmarkProject(models.Model):
+    user_id = models.IntegerField()
+    project_id = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class RouteMatrix(models.Model):
+    route_name = models.CharField(max_length=255)
+    permissions = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
 

@@ -1,67 +1,39 @@
-from django.urls import path
+# Revolution Realty - URL Configuration
+# Comprehensive API routing for frontend integration
+
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
 
-# API URL patterns
-api_urlpatterns = [
-    path("", views.api_welcome, name="api-welcome"),
-    path("sell-my-home", views.sell_home, name="api-sell-my-home"),
-    path("saveAdsAnalytics", views.save_ads_analytics, name="api-saveAdsAnalytics"),
-    path("saveContact", views.save_contact, name="api-saveContact"),
-    path("save-mortagage-calculations", views.save_mortgage_calculation, name="api-save-mortagage"),
-    path("get-mortagage-calculations", views.get_mortgage_calculation, name="api-get-mortagage"),
-    path("property-search", views.property_search, name="api-property-search"),
-    path("propertyFilter", views.property_filter, name="api-propertyFilter"),
-    path("agent-list", views.agent_list, name="api-agent-list"),
-    path("contact-agent/<int:user_id>", views.contact_agent, name="api-contactagent"),
-    path("compare_property", views.compare_property, name="api-compare_property"),
-    path("favorite-agent", views.favorite_agent_toggle, name="api-favoriteagent"),
-    path("agent-detail/<int:user_id>/<str:agent_name>", views.agent_detail, name="api-agentDetail"),
-    path("agent-detail/<int:user_id>", views.agent_detail, name="api-agentDetail"),
-    path("property-fav/<int:property_id>", views.mark_favorite_property, name="api-property-fav"),
-    path("contact-us", views.contact_us_create, name="api-contact-us"),
-    path("contact-us/save", views.contact_us_store, name="api-contact-us-save"),
-    path("savesearchuser", views.save_search, name="api-savesearchurl"),
-    path("property-info", views.property_more_info, name="api-property-info"),
-    path("property-info-window", views.property_info_window, name="api-property-info-window"),
-    path("vendor-info-window", views.vendor_info_window, name="api-vendor-info-window"),
-    path("property/latlongs", views.get_lat_longs, name="api-get-latlongs"),
-    path("vendors/coordinates", views.get_lat_longs_vendors, name="api-get-latlongsvendors"),
-    path("property/default-latlongs", views.property_filter_default_latlongs, name="api-get-latlongs-default"),
-    path("auto-complete-address", views.auto_complete_address, name="api-get-autoaddress"),
-    path("auto-complete-school", views.auto_complete_school, name="api-get-autoSchools"),
-    path("property-detail/<int:property_id>/<str:mls_number>/<str:address>", views.property_detail, name="api-property-detail"),
-    path("property-detail/<int:property_id>/<str:mls_number>", views.property_detail, name="api-property-detail"),
-    path("vendor-list", views.vendor_list, name="api-vendor-list"),
-    path("vendor-list/<str:keyword>", views.vendor_list, name="api-vendor-list"),
-    path("vendor-detail/<int:user_id>/<str:name>", views.vendor_detail, name="api-vendorDetail"),
-    path("vendor-detail/<int:user_id>", views.vendor_detail, name="api-vendorDetail"),
-    path("favorite-vendor", views.favorite_vendor, name="api-favoriteVendor"),
-    path("contact-vendor-coordinates", views.contact_vendor_coordinates, name="api-vendorcoordinates"),
-    path("contact-vendor", views.contact_vendor, name="api-contact-vendor"),
-    path("vendor-blog-detail/<int:news_id>/<str:news_name>", views.news_detail, name="api-news-detail"),
-    path("vendor-blog-detail/<int:news_id>", views.news_detail, name="api-news-detail"),
-    path("blog", views.blog_list, name="api-blog-list"),
-    path("blog/<slug:slug>", views.blog_detail, name="api-blog-detail"),
-    path("list-awards/<int:user_id>", views.list_awards, name="api-listAwards"),
-    path("list-projects/<int:user_id>", views.list_projects, name="api-listProjects"),
-    path("saveproject", views.save_project, name="api-saveproject"),
-    path("projects-detail/<int:user_id>/<int:project_id>", views.projects_detail, name="api-projectsDetail"),
-    path("reviewme/<int:user_id>/<str:name>", views.review_me, name="api-reviewme"),
-    path("reviewme/<int:user_id>", views.review_me, name="api-reviewme"),
-    path("postReviewme", views.review_me_post, name="api-postReviewme"),
-    path("browseReviews/<int:user_id>/<str:name>", views.browse_reviews, name="api-browseReviews"),
-    path("browseReviews/<int:user_id>", views.browse_reviews, name="api-browseReviews"),
-    path("commentReview", views.comment_review, name="api-commentReview"),
-    path("list-qa/<int:user_id>", views.list_qa, name="api-listQA"),
-    path("vendor-list-blog/<int:user_id>", views.list_news, name="api-listNews"),
-    path("vendor-detail-log/<int:user_id>/<int:news_id>", views.detail_news, name="api-detailNews"),
-    path("like-review", views.like_review, name="api-likeReview"),
-    path("ckeditor", views.ckeditor_view, name="api-ckeditor"),
-]
+# Create router for ViewSets
+router = DefaultRouter()
+router.register(r'leads', views.LeadViewSet)
+router.register(r'lead-sources', views.LeadSourceViewSet)
+router.register(r'transactions', views.TransactionViewSet)
+router.register(r'task-boards', views.TaskBoardViewSet)
+router.register(r'task-lists', views.TaskListViewSet)
+router.register(r'tasks', views.TaskViewSet)
+router.register(r'properties', views.PropertyViewSet)
+router.register(r'property-images', views.PropertyImageViewSet)
+router.register(r'activities', views.ActivityViewSet)
+router.register(r'site-settings', views.SiteSettingsViewSet)
+router.register(r'users', views.UserViewSet)
 
-# Main URL patterns - serve React frontend for all non-API routes
 urlpatterns = [
-    # Catch-all pattern for React frontend (must be last)
-    path("", views.react_frontend, name="react-frontend"),
+    # Frontend Routes (React)
+    path('', views.home_view, name='home'),
+    
+    # API Routes
+    path('api/', views.api_welcome, name='api_welcome'),
+    path('api/', include(router.urls)),
+    
+    # Dashboard & Analytics
+    path('api/dashboard/stats/', views.dashboard_stats, name='dashboard_stats'),
+    path('api/dashboard/lead-sources/', views.lead_source_performance, name='lead_source_performance'),
+    path('api/dashboard/monthly/', views.monthly_performance, name='monthly_performance'),
+    
+    # Public API Endpoints
+    path('api/public/capture-lead/', views.capture_lead, name='capture_lead'),
+    path('api/public/property-search/', views.property_search, name='property_search'),
 ]
 
