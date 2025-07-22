@@ -63,8 +63,9 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    'core.middleware.TenantMiddleware',
-    'core.middleware.BrandingMiddleware',
+    # Temporarily disabled custom middleware to fix homepage
+    # 'core.middleware.TenantMiddleware',
+    # 'core.middleware.BrandingMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -72,8 +73,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'core.middleware.SubscriptionMiddleware',
-    'core.middleware.UsageTrackingMiddleware',
+    # 'core.middleware.SubscriptionMiddleware',
+    # 'core.middleware.UsageTrackingMiddleware',
 ]
 
 ROOT_URLCONF = 'RevolutionMVP_Django.urls'
@@ -82,8 +83,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            BASE_DIR / 'core' / 'templates',  # Django templates
-            BASE_DIR.parent / 'frontend' / 'dist',  # React build directory
+            BASE_DIR / 'core' / 'templates',  # Django templates (includes React index.html)
         ],
         'APP_DIRS': True,
         'OPTIONS': {
