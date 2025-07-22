@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User as DjangoUser
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
@@ -11,13 +11,7 @@ admin.site.site_header = "Revolution Realty Administration"
 admin.site.site_title = "Revolution Realty Admin"
 admin.site.index_title = "Welcome to Revolution Realty Administration"
 
-# User Management (Enhanced)
-class UserProfileInline(admin.StackedInline):
-    model = User
-    can_delete = False
-    verbose_name_plural = 'Profile'
-    fields = ('first_name', 'last_name', 'email', 'is_active', 'is_staff', 'is_superuser')
-
+# Enhanced Django User Admin (don't unregister, just extend)
 class CustomUserAdmin(BaseUserAdmin):
     list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'is_active', 'date_joined')
     list_filter = ('is_staff', 'is_superuser', 'is_active', 'date_joined')
@@ -28,11 +22,11 @@ class CustomUserAdmin(BaseUserAdmin):
         ('Additional Info', {'fields': ('last_login', 'date_joined')}),
     )
 
-# Re-register UserAdmin
-admin.site.unregister(User)
-admin.site.register(User, CustomUserAdmin)
+# Re-register UserAdmin with our custom version
+admin.site.unregister(DjangoUser)
+admin.site.register(DjangoUser, CustomUserAdmin)
 
-# Role Management
+# Sentinel Authentication Models
 @admin.register(Role)
 class RoleAdmin(admin.ModelAdmin):
     list_display = ('name', 'slug', 'created_at', 'updated_at')
@@ -46,7 +40,6 @@ class RoleUserAdmin(admin.ModelAdmin):
     list_filter = ('role_id', 'created_at')
     search_fields = ('user_id',)
 
-# User Authentication & Security
 @admin.register(Activation)
 class ActivationAdmin(admin.ModelAdmin):
     list_display = ('user_id', 'code', 'completed', 'completed_at', 'created_at')
@@ -76,90 +69,90 @@ class ThrottleAdmin(admin.ModelAdmin):
 # Real Estate Content Management
 @admin.register(DatAwards)
 class DatAwardsAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user_id', 'client_id', 'created_at', 'updated_at')
-    list_filter = ('client_id', 'created_at')
-    search_fields = ('user_id',)
+    list_display = ('id', 'user_id', 'title', 'created_at', 'updated_at')
+    list_filter = ('created_at',)
+    search_fields = ('user_id', 'title')
 
 @admin.register(DatProjects)
 class DatProjectsAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user_id', 'client_id', 'created_at', 'updated_at')
-    list_filter = ('client_id', 'created_at')
-    search_fields = ('user_id',)
+    list_display = ('id', 'user_id', 'title', 'city', 'state', 'created_at')
+    list_filter = ('state', 'created_at')
+    search_fields = ('user_id', 'title', 'city')
 
 @admin.register(DatProjectsImages)
 class DatProjectsImagesAdmin(admin.ModelAdmin):
-    list_display = ('id', 'project_id', 'created_at', 'updated_at')
+    list_display = ('id', 'projects_id', 'title', 'created_at')
     list_filter = ('created_at',)
-    search_fields = ('project_id',)
+    search_fields = ('projects_id', 'title')
 
 @admin.register(DatProjectsVideos)
 class DatProjectsVideosAdmin(admin.ModelAdmin):
-    list_display = ('id', 'project_id', 'created_at', 'updated_at')
+    list_display = ('id', 'projects_id', 'title', 'created_at')
     list_filter = ('created_at',)
-    search_fields = ('project_id',)
+    search_fields = ('projects_id', 'title')
 
 # Property & Listing Management
 @admin.register(UserBookmarkProject)
 class UserBookmarkProjectAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user_id', 'project_id', 'created_at', 'updated_at')
-    list_filter = ('created_at',)
+    list_display = ('id', 'user_id', 'project_id', 'book_mark_flash', 'created_at')
+    list_filter = ('book_mark_flash', 'created_at')
     search_fields = ('user_id', 'project_id')
 
 # Reviews & Ratings
 @admin.register(VendorRating)
 class VendorRatingAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user_id', 'vendor_id', 'created_at', 'updated_at')
-    list_filter = ('created_at',)
-    search_fields = ('user_id', 'vendor_id')
+    list_display = ('id', 'user_id', 'user_reviewed_id', 'first_name', 'last_name', 'score', 'created_at')
+    list_filter = ('score', 'created_at')
+    search_fields = ('user_id', 'first_name', 'last_name', 'email')
 
 @admin.register(CommentReview)
 class CommentReviewAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user_id', 'created_at', 'updated_at')
+    list_display = ('id', 'id_review', 'user_comment', 'created_at')
     list_filter = ('created_at',)
-    search_fields = ('user_id',)
+    search_fields = ('user_comment', 'comment')
 
 @admin.register(DatLikeReviews)
 class DatLikeReviewsAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user_id', 'review_id', 'created_at', 'updated_at')
-    list_filter = ('created_at',)
-    search_fields = ('user_id', 'review_id')
+    list_display = ('id', 'user_id', 'vendor_rating_id', 'status', 'created_at')
+    list_filter = ('status', 'created_at')
+    search_fields = ('user_id', 'vendor_rating_id')
 
 # Communication & Contact Management
 @admin.register(MailActivityLog)
 class MailActivityLogAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user_id', 'created_at', 'updated_at')
-    list_filter = ('created_at',)
-    search_fields = ('user_id',)
-    readonly_fields = ('created_at', 'updated_at')
+    list_display = ('id', 'from_name', 'to_name', 'subject', 'send_status', 'create_at')
+    list_filter = ('send_status', 'status_type', 'create_at')
+    search_fields = ('from_name', 'to_name', 'subject')
+    readonly_fields = ('create_at',)
 
 @admin.register(MailSignature)
 class MailSignatureAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user_id', 'created_at', 'updated_at')
-    list_filter = ('created_at',)
+    list_display = ('id', 'user_id', 'status', 'create_at', 'update_at')
+    list_filter = ('status', 'create_at')
     search_fields = ('user_id',)
 
 @admin.register(ContactsSearches)
 class ContactsSearchesAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user_id', 'created_at', 'updated_at')
-    list_filter = ('created_at',)
-    search_fields = ('user_id',)
+    list_display = ('id', 'name', 'user_id', 'type', 'region', 'created_at')
+    list_filter = ('type', 'created_at')
+    search_fields = ('name', 'user_id', 'keyword')
 
 # Route Management
 @admin.register(RouteMatrix)
 class RouteMatrixAdmin(admin.ModelAdmin):
-    list_display = ('id', 'created_at', 'updated_at')
-    list_filter = ('created_at',)
+    list_display = ('id', 'route_name', 'guest', 'user', 'vendor', 'agent', 'system_admin', 'super_admin')
+    search_fields = ('route_name',)
 
 # Custom Admin Actions
 def make_active(modeladmin, request, queryset):
-    queryset.update(is_active=True)
+    queryset.update(status=1)
 make_active.short_description = "Mark selected items as active"
 
 def make_inactive(modeladmin, request, queryset):
-    queryset.update(is_active=False)
+    queryset.update(status=0)
 make_inactive.short_description = "Mark selected items as inactive"
 
-# Add custom CSS for admin styling
+# Custom CSS for admin styling
 class AdminStyleMixin:
     class Media:
         css = {
@@ -167,7 +160,7 @@ class AdminStyleMixin:
         }
         js = ('admin/js/custom_admin.js',)
 
-# Apply styling to all admin classes
+# Apply styling to main admin classes
 for model_admin in [CustomUserAdmin, RoleAdmin, RoleUserAdmin, ActivationAdmin, 
                    PersistenceAdmin, ReminderAdmin, ThrottleAdmin]:
     if hasattr(model_admin, 'Media'):

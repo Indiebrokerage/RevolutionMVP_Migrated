@@ -18,21 +18,39 @@ class Command(BaseCommand):
         # Check if superuser already exists
         if User.objects.filter(username=username).exists():
             self.stdout.write(
-                self.style.WARNING(f'Superuser "{username}" already exists.')
+                self.style.WARNING(f'Superuser "{username}" already exists. Skipping creation.')
             )
+            # Update the existing user to ensure they have superuser privileges
+            user = User.objects.get(username=username)
+            if not user.is_superuser:
+                user.is_superuser = True
+                user.is_staff = True
+                user.save()
+                self.stdout.write(
+                    self.style.SUCCESS(f'Updated "{username}" to have superuser privileges.')
+                )
             return
 
         # Create superuser
-        User.objects.create_superuser(
-            username=username,
-            email=email,
-            password=password
-        )
+        try:
+            User.objects.create_superuser(
+                username=username,
+                email=email,
+                password=password
+            )
 
-        self.stdout.write(
-            self.style.SUCCESS(f'Successfully created superuser "{username}"')
-        )
-        self.stdout.write(f'Email: {email}')
-        self.stdout.write(f'Password: {password}')
-        self.stdout.write('You can now login to the admin at /admin/')
+            self.stdout.write(
+                self.style.SUCCESS(f'Successfully created superuser "{username}"')
+            )
+            self.stdout.write(f'Email: {email}')
+            self.stdout.write(f'Password: {password}')
+            self.stdout.write('You can now login to the admin at /admin/')
+        except Exception as e:
+            self.stdout.write(
+                self.style.ERROR(f'Error creating superuser: {str(e)}')
+            )
+            # Don't fail the deployment if superuser creation fails
+            self.stdout.write(
+                self.style.WARNING('Continuing deployment despite superuser creation error.')
+            )
 
