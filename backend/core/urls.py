@@ -22,6 +22,7 @@ router.register(r'users', views.UserViewSet)
 urlpatterns = [
     # Frontend Routes (React)
     path('', views.home_view, name='home'),
+    path('crm/', views.crm_view, name='crm'),
     
     # API Routes
     path('api/', views.api_welcome, name='api_welcome'),

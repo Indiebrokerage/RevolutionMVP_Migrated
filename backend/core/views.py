@@ -32,6 +32,10 @@ def home_view(request):
     """Serve React frontend"""
     return render(request, 'index.html')
 
+def crm_view(request):
+    """Serve React CRM application"""
+    return render(request, 'crm.html')
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def api_welcome(request):
@@ -594,4 +598,5 @@ def property_search(request):
         'page_size': page_size,
         'total_pages': (total_count + page_size - 1) // page_size
     })
+
 
