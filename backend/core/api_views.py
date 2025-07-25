@@ -1,600 +1,379 @@
-# Revolution Realty - Comprehensive REST API Views
-# Market-ready CRM API endpoints
+# Comprehensive API views for Revolution CRM frontend
 
-from rest_framework import viewsets, status, permissions
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
-from django.db.models import Q, Count, Sum, Avg
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.utils.decorators import method_decorator
+from django.contrib.auth.decorators import login_required
+from django.db.models import Count, Sum, Q, Avg
 from django.utils import timezone
 from datetime import datetime, timedelta
-from .models import *
-from .serializers import *
+import json
 
-class StandardResultsSetPagination(PageNumberPagination):
-    page_size = 20
-    page_size_query_param = 'page_size'
-    max_page_size = 100
-
-# ============================================================================
-# LEAD MANAGEMENT API (BOOMTOWN-STYLE)
-# ============================================================================
-
-class LeadViewSet(viewsets.ModelViewSet):
-    queryset = Lead.objects.all()
-    serializer_class = LeadSerializer
-    pagination_class = StandardResultsSetPagination
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def get_queryset(self):
-        queryset = Lead.objects.all()
-        
-        # Filter by status
-        status = self.request.query_params.get('status', None)
-        if status:
-            queryset = queryset.filter(status=status)
-        
-        # Filter by temperature
-        temperature = self.request.query_params.get('temperature', None)
-        if temperature:
-            queryset = queryset.filter(temperature=temperature)
-        
-        # Filter by assigned agent
-        agent = self.request.query_params.get('agent', None)
-        if agent:
-            queryset = queryset.filter(assigned_agent_id=agent)
-        
-        # Filter by lead score range
-        min_score = self.request.query_params.get('min_score', None)
-        max_score = self.request.query_params.get('max_score', None)
-        if min_score:
-            queryset = queryset.filter(lead_score__gte=min_score)
-        if max_score:
-            queryset = queryset.filter(lead_score__lte=max_score)
-        
-        # Search functionality
-        search = self.request.query_params.get('search', None)
-        if search:
-            queryset = queryset.filter(
-                Q(first_name__icontains=search) |
-                Q(last_name__icontains=search) |
-                Q(email__icontains=search) |
-                Q(phone__icontains=search)
-            )
-        
-        return queryset.order_by('-created_at')
-    
-    @action(detail=True, methods=['post'])
-    def update_score(self, request, pk=None):
-        """Update lead score based on activity"""
-        lead = self.get_object()
-        lead.calculate_lead_score()
-        lead.save()
-        return Response({'lead_score': lead.lead_score})
-    
-    @action(detail=True, methods=['post'])
-    def add_activity(self, request, pk=None):
-        """Add activity to lead"""
-        lead = self.get_object()
-        activity_data = request.data
-        activity_data['lead'] = lead.id
-        activity_data['agent'] = request.user.id
-        
-        serializer = ActivitySerializer(data=activity_data)
-        if serializer.is_valid():
-            serializer.save()
-            
-            # Update lead score after activity
-            lead.calculate_lead_score()
-            lead.last_contact = timezone.now()
-            lead.save()
-            
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(detail=False, methods=['get'])
-    def dashboard_stats(self, request):
-        """Get lead dashboard statistics"""
-        total_leads = Lead.objects.count()
-        new_leads = Lead.objects.filter(status='new').count()
-        hot_leads = Lead.objects.filter(temperature='hot').count()
-        qualified_leads = Lead.objects.filter(status='qualified').count()
-        
-        # Leads by source
-        leads_by_source = Lead.objects.values('source__name').annotate(
-            count=Count('id')
-        ).order_by('-count')[:5]
-        
-        # Recent leads
-        recent_leads = Lead.objects.order_by('-created_at')[:10]
-        recent_serializer = LeadSerializer(recent_leads, many=True)
-        
-        return Response({
-            'total_leads': total_leads,
-            'new_leads': new_leads,
-            'hot_leads': hot_leads,
-            'qualified_leads': qualified_leads,
-            'leads_by_source': leads_by_source,
-            'recent_leads': recent_serializer.data
-        })
-
-class ActivityViewSet(viewsets.ModelViewSet):
-    queryset = Activity.objects.all()
-    serializer_class = ActivitySerializer
-    pagination_class = StandardResultsSetPagination
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def get_queryset(self):
-        queryset = Activity.objects.all()
-        
-        # Filter by lead
-        lead_id = self.request.query_params.get('lead', None)
-        if lead_id:
-            queryset = queryset.filter(lead_id=lead_id)
-        
-        # Filter by agent
-        agent_id = self.request.query_params.get('agent', None)
-        if agent_id:
-            queryset = queryset.filter(agent_id=agent_id)
-        
-        # Filter by activity type
-        activity_type = self.request.query_params.get('type', None)
-        if activity_type:
-            queryset = queryset.filter(activity_type=activity_type)
-        
-        # Filter by status
-        activity_status = self.request.query_params.get('status', None)
-        if activity_status:
-            queryset = queryset.filter(status=activity_status)
-        
-        return queryset.order_by('-scheduled_at')
-
-# ============================================================================
-# TRANSACTION MANAGEMENT API (COMMISSIONS INC-STYLE)
-# ============================================================================
-
-class TransactionViewSet(viewsets.ModelViewSet):
-    queryset = Transaction.objects.all()
-    serializer_class = TransactionSerializer
-    pagination_class = StandardResultsSetPagination
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def get_queryset(self):
-        queryset = Transaction.objects.all()
-        
-        # Filter by status
-        transaction_status = self.request.query_params.get('status', None)
-        if transaction_status:
-            queryset = queryset.filter(status=transaction_status)
-        
-        # Filter by agent
-        agent_id = self.request.query_params.get('agent', None)
-        if agent_id:
-            queryset = queryset.filter(
-                Q(listing_agent_id=agent_id) | Q(buyer_agent_id=agent_id)
-            )
-        
-        # Filter by transaction type
-        transaction_type = self.request.query_params.get('type', None)
-        if transaction_type:
-            queryset = queryset.filter(transaction_type=transaction_type)
-        
-        return queryset.order_by('-created_at')
-    
-    @action(detail=True, methods=['post'])
-    def calculate_commission(self, request, pk=None):
-        """Calculate commission splits for transaction"""
-        transaction = self.get_object()
-        transaction.calculate_commissions()
-        transaction.save()
-        
-        serializer = TransactionSerializer(transaction)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def pipeline_stats(self, request):
-        """Get transaction pipeline statistics"""
-        pipeline_data = Transaction.objects.values('status').annotate(
-            count=Count('id'),
-            total_volume=Sum('sale_price')
-        ).order_by('status')
-        
-        total_volume = Transaction.objects.filter(
-            status='closed'
-        ).aggregate(total=Sum('sale_price'))['total'] or 0
-        
-        total_commission = Transaction.objects.filter(
-            status='closed'
-        ).aggregate(total=Sum('gross_commission'))['total'] or 0
-        
-        return Response({
-            'pipeline': pipeline_data,
-            'total_volume': total_volume,
-            'total_commission': total_commission
-        })
-
-# ============================================================================
-# PROPERTY MANAGEMENT API (REAL GEEKS-STYLE)
-# ============================================================================
-
-class PropertyViewSet(viewsets.ModelViewSet):
-    queryset = Property.objects.all()
-    serializer_class = PropertySerializer
-    pagination_class = StandardResultsSetPagination
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def get_queryset(self):
-        queryset = Property.objects.all()
-        
-        # Filter by status
-        property_status = self.request.query_params.get('status', None)
-        if property_status:
-            queryset = queryset.filter(status=property_status)
-        
-        # Filter by property type
-        property_type = self.request.query_params.get('type', None)
-        if property_type:
-            queryset = queryset.filter(property_type=property_type)
-        
-        # Filter by price range
-        min_price = self.request.query_params.get('min_price', None)
-        max_price = self.request.query_params.get('max_price', None)
-        if min_price:
-            queryset = queryset.filter(list_price__gte=min_price)
-        if max_price:
-            queryset = queryset.filter(list_price__lte=max_price)
-        
-        # Filter by bedrooms/bathrooms
-        bedrooms = self.request.query_params.get('bedrooms', None)
-        if bedrooms:
-            queryset = queryset.filter(bedrooms__gte=bedrooms)
-        
-        bathrooms = self.request.query_params.get('bathrooms', None)
-        if bathrooms:
-            queryset = queryset.filter(bathrooms__gte=bathrooms)
-        
-        # Filter by city
-        city = self.request.query_params.get('city', None)
-        if city:
-            queryset = queryset.filter(city__icontains=city)
-        
-        # Search functionality
-        search = self.request.query_params.get('search', None)
-        if search:
-            queryset = queryset.filter(
-                Q(address__icontains=search) |
-                Q(city__icontains=search) |
-                Q(mls_number__icontains=search)
-            )
-        
-        return queryset.order_by('-created_at')
-    
-    @action(detail=True, methods=['post'])
-    def track_view(self, request, pk=None):
-        """Track property view for analytics"""
-        property_obj = self.get_object()
-        property_obj.view_count += 1
-        property_obj.save()
-        
-        # Create analytics event
-        AnalyticsEvent.objects.create(
-            event_type='property_view',
-            property=property_obj,
-            user_session=request.session.session_key or 'anonymous',
-            page_url=request.META.get('HTTP_REFERER', ''),
-            ip_address=request.META.get('REMOTE_ADDR'),
-            user_agent=request.META.get('HTTP_USER_AGENT', '')
-        )
-        
-        return Response({'view_count': property_obj.view_count})
-    
-    @action(detail=False, methods=['get'])
-    def market_stats(self, request):
-        """Get property market statistics"""
-        total_properties = Property.objects.count()
-        active_listings = Property.objects.filter(status='active').count()
-        avg_price = Property.objects.filter(
-            status='active'
-        ).aggregate(avg=Avg('list_price'))['avg'] or 0
-        
-        # Properties by type
-        by_type = Property.objects.values('property_type').annotate(
-            count=Count('id')
-        ).order_by('-count')
-        
-        # Properties by city
-        by_city = Property.objects.values('city').annotate(
-            count=Count('id'),
-            avg_price=Avg('list_price')
-        ).order_by('-count')[:10]
-        
-        return Response({
-            'total_properties': total_properties,
-            'active_listings': active_listings,
-            'average_price': avg_price,
-            'by_type': by_type,
-            'by_city': by_city
-        })
-
-# ============================================================================
-# TASK MANAGEMENT API (ASANA/TRELLO-STYLE)
-# ============================================================================
-
-class TaskBoardViewSet(viewsets.ModelViewSet):
-    queryset = TaskBoard.objects.all()
-    serializer_class = TaskBoardSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def get_queryset(self):
-        return TaskBoard.objects.filter(
-            Q(owner=self.request.user) | Q(members=self.request.user)
-        ).distinct()
-
-class TaskViewSet(viewsets.ModelViewSet):
-    queryset = Task.objects.all()
-    serializer_class = TaskSerializer
-    pagination_class = StandardResultsSetPagination
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def get_queryset(self):
-        queryset = Task.objects.all()
-        
-        # Filter by task list
-        task_list_id = self.request.query_params.get('task_list', None)
-        if task_list_id:
-            queryset = queryset.filter(task_list_id=task_list_id)
-        
-        # Filter by assigned user
-        assigned_to = self.request.query_params.get('assigned_to', None)
-        if assigned_to:
-            queryset = queryset.filter(assigned_to_id=assigned_to)
-        
-        # Filter by completion status
-        completed = self.request.query_params.get('completed', None)
-        if completed is not None:
-            queryset = queryset.filter(is_completed=completed.lower() == 'true')
-        
-        # Filter by priority
-        priority = self.request.query_params.get('priority', None)
-        if priority:
-            queryset = queryset.filter(priority=priority)
-        
-        return queryset.order_by('order', 'created_at')
-    
-    @action(detail=True, methods=['post'])
-    def complete(self, request, pk=None):
-        """Mark task as completed"""
-        task = self.get_object()
-        task.is_completed = True
-        task.completed_at = timezone.now()
-        task.save()
-        
-        serializer = TaskSerializer(task)
-        return Response(serializer.data)
-
-# ============================================================================
-# WEBSITE & CONTENT MANAGEMENT API
-# ============================================================================
-
-class WebsiteViewSet(viewsets.ModelViewSet):
-    queryset = Website.objects.all()
-    serializer_class = WebsiteSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-class WebsitePageViewSet(viewsets.ModelViewSet):
-    queryset = WebsitePage.objects.all()
-    serializer_class = WebsitePageSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def get_queryset(self):
-        queryset = WebsitePage.objects.all()
-        
-        # Filter by website
-        website_id = self.request.query_params.get('website', None)
-        if website_id:
-            queryset = queryset.filter(website_id=website_id)
-        
-        return queryset.order_by('order')
-
-class LeadCaptureFormViewSet(viewsets.ModelViewSet):
-    queryset = LeadCaptureForm.objects.all()
-    serializer_class = LeadCaptureFormSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    
-    @action(detail=True, methods=['post'])
-    def submit(self, request, pk=None):
-        """Handle form submission and create lead"""
-        form = self.get_object()
-        form_data = request.data
-        
-        # Create lead from form submission
-        lead_data = {
-            'first_name': form_data.get('first_name', ''),
-            'last_name': form_data.get('last_name', ''),
-            'email': form_data.get('email', ''),
-            'phone': form_data.get('phone', ''),
-            'notes': form_data.get('message', ''),
-            'source': form_data.get('source_id', None)
+# Sample data for the CRM (this would normally come from the database)
+def get_sample_leads():
+    return [
+        {
+            "id": 1,
+            "name": "Sarah Johnson",
+            "email": "sarah.johnson@email.com",
+            "phone": "(555) 123-4567",
+            "status": "hot",
+            "score": 85,
+            "source": "Website",
+            "budget": "$450,000 - $550,000",
+            "preferences": "3-4 BR, Modern, Downtown",
+            "lastContact": "2 hours ago",
+            "avatar": "/api/placeholder/32/32"
+        },
+        {
+            "id": 2,
+            "name": "Michael Chen",
+            "email": "m.chen@email.com",
+            "phone": "(555) 234-5678",
+            "status": "qualified",
+            "score": 72,
+            "source": "Facebook Ads",
+            "budget": "$300,000 - $400,000",
+            "preferences": "2-3 BR, Family-friendly",
+            "lastContact": "1 day ago",
+            "avatar": "/api/placeholder/32/32"
+        },
+        {
+            "id": 3,
+            "name": "Emily Rodriguez",
+            "email": "emily.r@email.com",
+            "phone": "(555) 345-6789",
+            "status": "nurturing",
+            "score": 58,
+            "source": "Zillow",
+            "budget": "$200,000 - $300,000",
+            "preferences": "Starter home, Good schools",
+            "lastContact": "3 days ago",
+            "avatar": "/api/placeholder/32/32"
         }
-        
-        lead_serializer = LeadSerializer(data=lead_data)
-        if lead_serializer.is_valid():
-            lead = lead_serializer.save()
-            
-            # Update form analytics
-            form.submissions += 1
-            form.save()
-            
-            # Create analytics event
-            AnalyticsEvent.objects.create(
-                event_type='lead_form_submit',
-                lead=lead,
-                user_session=request.session.session_key or 'anonymous',
-                event_data={'form_id': form.id, 'form_name': form.name}
-            )
-            
-            return Response({
-                'success': True,
-                'lead_id': lead.id,
-                'message': 'Thank you for your submission!'
-            })
-        
-        return Response({
-            'success': False,
-            'errors': lead_serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
+    ]
 
-# ============================================================================
-# ANALYTICS & REPORTING API
-# ============================================================================
+def get_sample_properties():
+    return [
+        {
+            "id": 1,
+            "address": "123 Oak Street, Downtown",
+            "price": "$485,000",
+            "beds": 3,
+            "baths": 2,
+            "sqft": "1,850",
+            "status": "Active",
+            "daysOnMarket": 12,
+            "views": 247,
+            "leads": 8,
+            "favorites": 15,
+            "agent": "John Smith",
+            "image": "/api/placeholder/300/200"
+        },
+        {
+            "id": 2,
+            "address": "456 Pine Avenue, Suburbs",
+            "price": "$325,000",
+            "beds": 2,
+            "baths": 2,
+            "sqft": "1,200",
+            "status": "Pending",
+            "daysOnMarket": 45,
+            "views": 189,
+            "leads": 12,
+            "favorites": 23,
+            "agent": "Lisa Davis",
+            "image": "/api/placeholder/300/200"
+        },
+        {
+            "id": 3,
+            "address": "789 Maple Drive, Uptown",
+            "price": "$675,000",
+            "beds": 4,
+            "baths": 3,
+            "sqft": "2,400",
+            "status": "Sold",
+            "daysOnMarket": 8,
+            "views": 312,
+            "leads": 18,
+            "favorites": 31,
+            "agent": "Mike Johnson",
+            "image": "/api/placeholder/300/200"
+        }
+    ]
 
-class AnalyticsViewSet(viewsets.ViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-    
-    @action(detail=False, methods=['get'])
-    def dashboard(self, request):
-        """Get main dashboard analytics"""
-        # Date range filter
-        days = int(request.query_params.get('days', 30))
-        start_date = timezone.now() - timedelta(days=days)
-        
-        # Lead analytics
-        total_leads = Lead.objects.count()
-        new_leads = Lead.objects.filter(created_at__gte=start_date).count()
-        
-        # Transaction analytics
-        total_transactions = Transaction.objects.count()
-        closed_transactions = Transaction.objects.filter(status='closed').count()
-        total_volume = Transaction.objects.filter(
-            status='closed'
-        ).aggregate(total=Sum('sale_price'))['total'] or 0
-        
-        # Property analytics
-        total_properties = Property.objects.count()
-        active_listings = Property.objects.filter(status='active').count()
-        
-        # Activity analytics
-        recent_activities = Activity.objects.filter(
-            created_at__gte=start_date
-        ).count()
-        
-        return Response({
-            'leads': {
-                'total': total_leads,
-                'new': new_leads,
-                'conversion_rate': (closed_transactions / total_leads * 100) if total_leads > 0 else 0
-            },
-            'transactions': {
-                'total': total_transactions,
-                'closed': closed_transactions,
-                'volume': total_volume
-            },
-            'properties': {
-                'total': total_properties,
-                'active': active_listings
-            },
-            'activities': {
-                'recent': recent_activities
-            }
-        })
-    
-    @action(detail=False, methods=['get'])
-    def lead_funnel(self, request):
-        """Get lead funnel analytics"""
-        funnel_data = Lead.objects.values('status').annotate(
-            count=Count('id')
-        ).order_by('status')
-        
-        return Response({'funnel': funnel_data})
-    
-    @action(detail=False, methods=['get'])
-    def revenue_forecast(self, request):
-        """Get revenue forecast based on pipeline"""
-        pipeline_transactions = Transaction.objects.filter(
-            status__in=['active', 'under_contract', 'pending']
-        )
-        
-        forecast_data = []
-        for transaction in pipeline_transactions:
-            probability = {
-                'active': 0.3,
-                'under_contract': 0.8,
-                'pending': 0.95
-            }.get(transaction.status, 0)
-            
-            forecast_data.append({
-                'transaction_id': transaction.transaction_id,
-                'expected_commission': float(transaction.gross_commission * probability),
-                'probability': probability,
-                'closing_date': transaction.closing_date
-            })
-        
-        return Response({'forecast': forecast_data})
+def get_sample_transactions():
+    return [
+        {
+            "id": 1,
+            "property": "123 Oak Street",
+            "client": "Sarah Johnson",
+            "agent": "John Smith",
+            "price": "$485,000",
+            "commission": "$14,550",
+            "status": "Under Contract",
+            "closeDate": "2024-08-15",
+            "daysToClose": 23
+        },
+        {
+            "id": 2,
+            "property": "456 Pine Avenue",
+            "client": "Michael Chen",
+            "agent": "Lisa Davis",
+            "price": "$325,000",
+            "commission": "$9,750",
+            "status": "Pending",
+            "closeDate": "2024-08-22",
+            "daysToClose": 30
+        },
+        {
+            "id": 3,
+            "property": "789 Maple Drive",
+            "client": "Emily Rodriguez",
+            "agent": "Mike Johnson",
+            "price": "$275,000",
+            "commission": "$8,250",
+            "status": "Closed",
+            "closeDate": "2024-07-18",
+            "daysToClose": 0
+        }
+    ]
 
-# ============================================================================
-# EMAIL MARKETING API
-# ============================================================================
+def get_sample_tasks():
+    return [
+        {
+            "id": 1,
+            "title": "Follow up with Sarah Johnson",
+            "description": "Schedule property viewing for downtown listings",
+            "priority": "High",
+            "status": "To Do",
+            "dueDate": "2024-07-26",
+            "assignee": "John Smith",
+            "leadId": 1
+        },
+        {
+            "id": 2,
+            "title": "Prepare market analysis",
+            "description": "Create CMA for Pine Avenue property",
+            "priority": "Medium",
+            "status": "In Progress",
+            "dueDate": "2024-07-28",
+            "assignee": "Lisa Davis",
+            "leadId": 2
+        },
+        {
+            "id": 3,
+            "title": "Contract review",
+            "description": "Review purchase agreement terms",
+            "priority": "High",
+            "status": "Done",
+            "dueDate": "2024-07-24",
+            "assignee": "Mike Johnson",
+            "leadId": 3
+        }
+    ]
 
-class EmailCampaignViewSet(viewsets.ModelViewSet):
-    queryset = EmailCampaign.objects.all()
-    serializer_class = EmailCampaignSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    
-    @action(detail=True, methods=['post'])
-    def send_campaign(self, request, pk=None):
-        """Send email campaign"""
-        campaign = self.get_object()
-        
-        if campaign.is_sent:
-            return Response({
-                'error': 'Campaign has already been sent'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Get recipients
-        recipients = campaign.recipient_list.all()
-        
-        # TODO: Implement actual email sending logic
-        # For now, just mark as sent
-        campaign.is_sent = True
-        campaign.sent_at = timezone.now()
-        campaign.sent_count = recipients.count()
-        campaign.save()
-        
-        return Response({
-            'success': True,
-            'sent_count': campaign.sent_count
-        })
+def get_dashboard_stats():
+    return {
+        "totalLeads": 1247,
+        "leadsGrowth": 12.5,
+        "activeProperties": 892,
+        "propertiesGrowth": 8.2,
+        "monthlyRevenue": 67000,
+        "revenueGrowth": 15.3,
+        "conversionRate": 24.8,
+        "conversionGrowth": 2.1
+    }
 
-# ============================================================================
-# NOTIFICATION API
-# ============================================================================
+def get_revenue_data():
+    return [
+        {"month": "Jan", "revenue": 45000, "leads": 120},
+        {"month": "Feb", "revenue": 52000, "leads": 135},
+        {"month": "Mar", "revenue": 48000, "leads": 128},
+        {"month": "Apr", "revenue": 61000, "leads": 142},
+        {"month": "May", "revenue": 55000, "leads": 138},
+        {"month": "Jun", "revenue": 67000, "leads": 156}
+    ]
 
-class NotificationViewSet(viewsets.ModelViewSet):
-    queryset = Notification.objects.all()
-    serializer_class = NotificationSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def get_queryset(self):
-        return Notification.objects.filter(
-            recipient=self.request.user
-        ).order_by('-created_at')
-    
-    @action(detail=True, methods=['post'])
-    def mark_read(self, request, pk=None):
-        """Mark notification as read"""
-        notification = self.get_object()
-        notification.is_read = True
-        notification.save()
-        
-        return Response({'success': True})
-    
-    @action(detail=False, methods=['post'])
-    def mark_all_read(self, request):
-        """Mark all notifications as read"""
-        Notification.objects.filter(
-            recipient=request.user,
-            is_read=False
-        ).update(is_read=True)
-        
-        return Response({'success': True})
+def get_lead_distribution():
+    return [
+        {"name": "Website", "value": 35, "color": "#3b82f6"},
+        {"name": "Facebook Ads", "value": 25, "color": "#10b981"},
+        {"name": "Zillow", "value": 20, "color": "#f59e0b"},
+        {"name": "Referrals", "value": 15, "color": "#ef4444"},
+        {"name": "Other", "value": 5, "color": "#8b5cf6"}
+    ]
+
+def get_activity_data():
+    return [
+        {"type": "Phone Calls", "count": 47},
+        {"type": "Emails", "count": 128},
+        {"type": "Meetings", "count": 23},
+        {"type": "Showings", "count": 15}
+    ]
+
+def get_recent_activities():
+    return [
+        {
+            "id": 1,
+            "type": "Phone Call",
+            "description": "Called Sarah Johnson about property viewing",
+            "agent": "John Smith",
+            "time": "2 hours ago",
+            "duration": "15 min"
+        },
+        {
+            "id": 2,
+            "type": "Email",
+            "description": "Sent market analysis to Michael Chen",
+            "agent": "Lisa Davis",
+            "time": "4 hours ago",
+            "duration": None
+        },
+        {
+            "id": 3,
+            "type": "Meeting",
+            "description": "Client consultation with Emily Rodriguez",
+            "agent": "Mike Johnson",
+            "time": "1 day ago",
+            "duration": "45 min"
+        }
+    ]
+
+# API Endpoints
+@csrf_exempt
+@require_http_methods(["GET"])
+def api_leads(request):
+    """Get all leads"""
+    return JsonResponse({"leads": get_sample_leads()})
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def api_properties(request):
+    """Get all properties"""
+    return JsonResponse({"properties": get_sample_properties()})
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def api_transactions(request):
+    """Get all transactions"""
+    return JsonResponse({"transactions": get_sample_transactions()})
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def api_tasks(request):
+    """Get all tasks"""
+    return JsonResponse({"tasks": get_sample_tasks()})
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def api_dashboard_stats(request):
+    """Get dashboard statistics"""
+    return JsonResponse({
+        "stats": get_dashboard_stats(),
+        "revenueData": get_revenue_data(),
+        "leadDistribution": get_lead_distribution()
+    })
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def api_activities(request):
+    """Get activity data"""
+    return JsonResponse({
+        "activityData": get_activity_data(),
+        "recentActivities": get_recent_activities()
+    })
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_create_lead(request):
+    """Create a new lead"""
+    try:
+        data = json.loads(request.body)
+        # In a real application, you would save this to the database
+        new_lead = {
+            "id": len(get_sample_leads()) + 1,
+            "name": data.get("name", ""),
+            "email": data.get("email", ""),
+            "phone": data.get("phone", ""),
+            "status": "new",
+            "score": 50,
+            "source": data.get("source", "Manual"),
+            "budget": data.get("budget", ""),
+            "preferences": data.get("preferences", ""),
+            "lastContact": "Just now",
+            "avatar": "/api/placeholder/32/32"
+        }
+        return JsonResponse({"success": True, "lead": new_lead})
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=400)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_create_property(request):
+    """Create a new property"""
+    try:
+        data = json.loads(request.body)
+        # In a real application, you would save this to the database
+        new_property = {
+            "id": len(get_sample_properties()) + 1,
+            "address": data.get("address", ""),
+            "price": data.get("price", ""),
+            "beds": data.get("beds", 0),
+            "baths": data.get("baths", 0),
+            "sqft": data.get("sqft", ""),
+            "status": "Active",
+            "daysOnMarket": 0,
+            "views": 0,
+            "leads": 0,
+            "favorites": 0,
+            "agent": data.get("agent", ""),
+            "image": "/api/placeholder/300/200"
+        }
+        return JsonResponse({"success": True, "property": new_property})
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=400)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_create_task(request):
+    """Create a new task"""
+    try:
+        data = json.loads(request.body)
+        # In a real application, you would save this to the database
+        new_task = {
+            "id": len(get_sample_tasks()) + 1,
+            "title": data.get("title", ""),
+            "description": data.get("description", ""),
+            "priority": data.get("priority", "Medium"),
+            "status": "To Do",
+            "dueDate": data.get("dueDate", ""),
+            "assignee": data.get("assignee", ""),
+            "leadId": data.get("leadId", None)
+        }
+        return JsonResponse({"success": True, "task": new_task})
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=400)
+
+@csrf_exempt
+@require_http_methods(["PUT"])
+def api_update_lead(request, lead_id):
+    """Update a lead"""
+    try:
+        data = json.loads(request.body)
+        # In a real application, you would update the database
+        return JsonResponse({"success": True, "message": f"Lead {lead_id} updated successfully"})
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=400)
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def api_delete_lead(request, lead_id):
+    """Delete a lead"""
+    try:
+        # In a real application, you would delete from the database
+        return JsonResponse({"success": True, "message": f"Lead {lead_id} deleted successfully"})
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=400)
 
