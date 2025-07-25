@@ -6,7 +6,6 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
 from core.saas_models import *
-from core.models import *
 
 class Command(BaseCommand):
     help = 'Set up the SaaS platform with subscription plans, features, and sample data'
